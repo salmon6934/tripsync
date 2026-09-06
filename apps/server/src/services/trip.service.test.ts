@@ -41,7 +41,7 @@ vi.mock('../db/index.js', () => ({
 vi.mock('../db/schema.js', () => ({
   trips: { id: 'trips.id', inviteCode: 'trips.invite_code', createdAt: 'trips.created_at' },
   tripMembers: { tripId: 'trip_members.trip_id', userId: 'trip_members.user_id', role: 'trip_members.role' },
-  users: { id: 'users.id', name: 'users.name', email: 'users.email', avatarUrl: 'users.avatar_url' },
+  users: { id: 'users.id', name: 'users.name', email: 'users.email', avatarId: 'users.avatar_id' },
 }));
 
 // Import after mocking

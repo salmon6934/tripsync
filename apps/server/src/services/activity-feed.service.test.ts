@@ -62,6 +62,7 @@ vi.mock('../db/schema.js', () => ({
   users: {
     id: 'users.id',
     name: 'users.name',
+    avatarId: 'users.avatar_id',
   },
 }));
 
@@ -442,6 +443,7 @@ describe('Activity Feed Service', () => {
       const expectedEnriched = {
         ...loggedEntry,
         userName: 'Charlie',
+        avatarId: null,
         description: "Charlie moved 'Museum' from Day 2 to Day 3",
       };
 

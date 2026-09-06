@@ -47,7 +47,7 @@ describe('Presence Service', () => {
 
   describe('join', () => {
     it('should SET presence key with JSON payload and TTL, and SADD to members set', async () => {
-      await join('trip-1', 'user-1', 'Alice', 'https://avatar.com/alice.png');
+      await join('trip-1', 'user-1', 'Alice', 3);
 
       // Verify SET was called with correct key, JSON payload, EX, and 30s TTL
       expect(mockSet).toHaveBeenCalledTimes(1);
@@ -59,7 +59,7 @@ describe('Presence Service', () => {
       const payload = JSON.parse(value);
       expect(payload.userId).toBe('user-1');
       expect(payload.userName).toBe('Alice');
-      expect(payload.avatarUrl).toBe('https://avatar.com/alice.png');
+      expect(payload.avatarId).toBe(3);
       expect(payload.editingBlockId).toBeNull();
       expect(payload.lastHeartbeat).toBeDefined();
 
@@ -67,13 +67,13 @@ describe('Presence Service', () => {
       expect(mockSadd).toHaveBeenCalledWith('presence:trip-1:members', 'user-1');
     });
 
-    it('should use default values for userName and avatarUrl when not provided', async () => {
+    it('should use default values for userName and avatarId when not provided', async () => {
       await join('trip-1', 'user-2');
 
       const [, value] = mockSet.mock.calls[0];
       const payload = JSON.parse(value);
       expect(payload.userName).toBe('Unknown');
-      expect(payload.avatarUrl).toBeNull();
+      expect(payload.avatarId).toBeNull();
     });
   });
 
@@ -91,7 +91,7 @@ describe('Presence Service', () => {
       const existingPayload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: 'block-5',
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -130,7 +130,7 @@ describe('Presence Service', () => {
       const existingPayload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: null,
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -150,7 +150,7 @@ describe('Presence Service', () => {
       const existingPayload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: 'block-42',
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };
@@ -186,14 +186,14 @@ describe('Presence Service', () => {
       const user1Payload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: null,
         lastHeartbeat: '2025-01-15T10:00:00.000Z',
       };
       const user2Payload = {
         userId: 'user-2',
         userName: 'Bob',
-        avatarUrl: 'https://avatar.com/bob.png',
+        avatarId: 5,
         editingBlockId: 'block-3',
         lastHeartbeat: '2025-01-15T10:00:05.000Z',
       };
@@ -219,7 +219,7 @@ describe('Presence Service', () => {
       const user1Payload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: null,
         lastHeartbeat: '2025-01-15T10:00:00.000Z',
       };
@@ -268,7 +268,7 @@ describe('Presence Service', () => {
       const existingPayload = {
         userId: 'user-1',
         userName: 'Alice',
-        avatarUrl: null,
+        avatarId: null,
         editingBlockId: null,
         lastHeartbeat: '2025-01-01T00:00:00.000Z',
       };

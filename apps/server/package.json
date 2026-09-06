@@ -10,6 +10,7 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:backfill-avatars": "dotenv -e ../../.env -- tsx src/scripts/backfill-avatar-ids.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },

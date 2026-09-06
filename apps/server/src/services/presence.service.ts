@@ -5,7 +5,7 @@ import { Redis } from 'ioredis';
 export interface PresenceInfo {
   userId: string;
   userName: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
   editingBlockId: string | null;
   lastHeartbeat: string; // ISO string for JSON serialization
 }
@@ -57,7 +57,7 @@ export async function join(
   tripId: string,
   userId: string,
   userName: string = 'Unknown',
-  avatarUrl: string | null = null
+  avatarId: number | null = null
 ): Promise<void> {
   const redis = getRedisClient();
   const key = presenceKey(tripId, userId);
@@ -65,7 +65,7 @@ export async function join(
   const payload: PresenceInfo = {
     userId,
     userName,
-    avatarUrl,
+    avatarId,
     editingBlockId: null,
     lastHeartbeat: new Date().toISOString(),
   };

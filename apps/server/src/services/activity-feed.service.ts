@@ -35,6 +35,7 @@ export interface ActivityLogEntry {
  */
 export interface EnrichedActivityEntry extends ActivityLogEntry {
   userName: string;
+  avatarId: number | null;
   description: string;
 }
 
@@ -82,7 +83,7 @@ export async function buildActivityEntry(
   entry: ActivityLogEntry
 ): Promise<EnrichedActivityEntry> {
   const [user] = await db
-    .select({ name: users.name })
+    .select({ name: users.name, avatarId: users.avatarId })
     .from(users)
     .where(eq(users.id, entry.userId));
 
@@ -91,6 +92,7 @@ export async function buildActivityEntry(
   return {
     ...entry,
     userName,
+    avatarId: user?.avatarId ?? null,
     description: formatDescription(entry, userName),
   };
 }
@@ -194,6 +196,7 @@ export async function getActivityFeed(tripId: string, limit = 20, offset = 0) {
       metadata: activityLog.metadata,
       createdAt: activityLog.createdAt,
       userName: users.name,
+      avatarId: users.avatarId,
     })
     .from(activityLog)
     .innerJoin(users, eq(activityLog.userId, users.id))
@@ -217,6 +220,7 @@ export async function getActivityFeed(tripId: string, limit = 20, offset = 0) {
     return {
       ...logEntry,
       userName: entry.userName,
+      avatarId: entry.avatarId,
       description: formatDescription(logEntry, entry.userName),
     };
   });

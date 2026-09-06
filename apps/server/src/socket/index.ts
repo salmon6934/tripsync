@@ -85,15 +85,15 @@ export function initializeSocketServer(
 
       // Fetch user name and avatar from DB for presence
       let userName = socket.data.email || 'Unknown';
-      let avatarUrl: string | null = null;
+      let avatarId: number | null = null;
       try {
         const [user] = await db
-          .select({ name: users.name, avatarUrl: users.avatarUrl })
+          .select({ name: users.name, avatarId: users.avatarId })
           .from(users)
           .where(eq(users.id, userId));
         if (user) {
           userName = user.name;
-          avatarUrl = user.avatarUrl;
+          avatarId = user.avatarId;
         }
       } catch (err) {
         console.error('Failed to fetch user for presence:', err);
@@ -101,16 +101,16 @@ export function initializeSocketServer(
 
       // Store name on socket data for later use
       socket.data.userName = userName;
-      socket.data.avatarUrl = avatarUrl;
+      socket.data.avatarId = avatarId;
 
       // Register presence in Redis
-      await presenceService.join(tripId, userId, userName, avatarUrl);
+      await presenceService.join(tripId, userId, userName, avatarId);
 
       // Broadcast join to others in the room
       socket.to(`trip:${tripId}`).emit('presence:join', {
         userId,
         userName,
-        avatarUrl,
+        avatarId,
       });
 
       // Send current online list to the joiner

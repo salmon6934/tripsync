@@ -1,5 +1,4 @@
 import {
-  getAvatarDataUri,
   isValidAvatarId,
   pickAvatarIdForSeed,
 } from '@tripsync/shared';
@@ -21,7 +20,7 @@ const SALT_ROUNDS = 12;
  */
 router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Request, res: Response) => {
   try {
-    const { email, password, name, avatarId } = req.body;
+    const { email, password, name, avatarId: requestedAvatarId } = req.body;
 
     // Check if user already exists
     const existingUser = await db
@@ -43,16 +42,14 @@ router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Req
 
     // Assign a default profile avatar. Prefer the one picked in the signup form;
     // otherwise derive a stable one from the email so every account still gets an
-    // avatar (e.g. accounts created without going through the form).
+    // avatar (e.g. accounts created without going through the form, or OAuth
+    // sign-ins that skip the picker).
     //
-    // The chosen avatar is stored as an inline SVG data URI in the existing
-    // avatar_url column. That needs no schema change and means every surface that
-    // already renders avatar_url (nav bar, member lists, presence indicators,
-    // itinerary "added by") picks it up with no further changes.
-    const resolvedAvatarId = isValidAvatarId(avatarId)
-      ? avatarId
+    // Only the integer id is persisted — the client resolves it to an image via
+    // getAvatarSrc(id), so payloads (DB, API, sockets, session cookie) stay small.
+    const avatarId = isValidAvatarId(requestedAvatarId)
+      ? requestedAvatarId
       : pickAvatarIdForSeed(email.toLowerCase());
-    const avatarUrl = getAvatarDataUri(resolvedAvatarId);
 
     // Insert the new user
     const [newUser] = await db
@@ -61,13 +58,13 @@ router.post('/signup', validate(signupSchema) as RequestHandler, async (req: Req
         email,
         name,
         passwordHash,
-        avatarUrl,
+        avatarId,
       })
       .returning({
         id: users.id,
         email: users.email,
         name: users.name,
-        avatarUrl: users.avatarUrl,
+        avatarId: users.avatarId,
         createdAt: users.createdAt,
       });
 
@@ -130,7 +127,7 @@ router.post('/login', validate(loginSchema) as RequestHandler, async (req: Reque
         id: user.id,
         email: user.email,
         name: user.name,
-        avatarUrl: user.avatarUrl,
+        avatarId: user.avatarId,
         createdAt: user.createdAt,
       },
       token,
@@ -168,7 +165,7 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
         id: users.id,
         email: users.email,
         name: users.name,
-        avatarUrl: users.avatarUrl,
+        avatarId: users.avatarId,
         createdAt: users.createdAt,
       })
       .from(users)

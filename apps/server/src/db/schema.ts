@@ -16,7 +16,10 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
-  avatarUrl: text('avatar_url'),
+  // Reference to a built-in default avatar (see @tripsync/shared DEFAULT_AVATARS).
+  // Stored as a small integer id rather than a rendered SVG/URL: every surface
+  // resolves it to an image client-side via getAvatarSrc(id).
+  avatarId: integer('avatar_id'),
   passwordHash: text('password_hash'), // null for OAuth-only users
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

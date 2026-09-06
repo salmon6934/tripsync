@@ -189,7 +189,7 @@ export async function getMembers(tripId: string) {
       joinedAt: tripMembers.joinedAt,
       userName: users.name,
       userEmail: users.email,
-      userAvatarUrl: users.avatarUrl,
+      userAvatarId: users.avatarId,
     })
     .from(tripMembers)
     .innerJoin(users, eq(tripMembers.userId, users.id))
