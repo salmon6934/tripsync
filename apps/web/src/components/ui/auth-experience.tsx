@@ -32,8 +32,8 @@ type SignupStep = 'form' | 'avatar';
 
 // Stable module-level constants — passing fresh array/string literals on every
 // render could nudge the shader to re-evaluate; these keep its props identical.
-const GRADIENT_BG = 'linear-gradient(135deg, #c13a28 0%, #b0744a 45%, #b8912e 100%)';
-const GRADIENT_COLORS = ['#fdf9f2', '#c13a28', '#b8912e', '#fdf9f2'];
+const GRADIENT_BG = 'linear-gradient(135deg, #CC5500 0%, #C9A13D 100%)';
+const GRADIENT_COLORS = ['#FDF9EE', '#CC5500', '#C9A13D', '#FDF9EE'];
 
 // Horizontal wipe: content is revealed/hidden along the x-axis via a clip-path
 // inset, with a small translate for parallax. `direction` (+1 forward, -1 back)
@@ -173,8 +173,8 @@ export function AuthExperience() {
   const viewKey = !isSignup ? 'signin' : signupStep === 'form' ? 'signup-form' : 'signup-avatar';
 
   return (
-    <section className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground antialiased [font-synthesis:none]">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+    <section className="flex min-h-screen items-center justify-center p-4 text-foreground antialiased [font-synthesis:none]">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-lg sm:max-w-xl">
         {/* Animated brand banner (never re-mounts on mode switch). */}
         <GradientBanner />
 
@@ -239,15 +239,15 @@ export function AuthExperience() {
 
                   {isSignup ? (
                     <form onSubmit={handleSignupDetails} className="mt-6 space-y-4">
-                      <FloatingInput id="name" label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
-                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" minLength={8} required />
+                      <FloatingInput id="name" label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="off" required />
+                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="off" required />
+                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" minLength={8} required />
                       <SubmitButton loading={false} label="Continue" loadingLabel="Continue" />
                     </form>
                   ) : (
                     <form onSubmit={handleSignin} className="mt-6 space-y-4">
-                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="off" required />
+                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" required />
                       <SubmitButton loading={loading} label="Sign in" loadingLabel="Signing in..." />
                     </form>
                   )}
@@ -324,7 +324,7 @@ const GradientBanner = memo(function GradientBanner() {
       <div className="relative z-10 flex h-full flex-col items-center justify-center gap-2 text-white">
         <Image src="/brand/mark.png" alt="" width={48} height={48} priority aria-hidden="true" />
         <span className="font-display text-2xl font-semibold tracking-tight drop-shadow-sm">
-          TripSync
+          tripSync
         </span>
         <span className="text-sm text-white/85 drop-shadow-sm">
           Plan trips together in real-time

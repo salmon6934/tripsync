@@ -39,7 +39,7 @@ export function Logo({
     <span className={`inline-flex items-center gap-2.5 ${className ?? ''}`}>
       <Image
         src="/brand/mark.png"
-        alt={markOnly ? 'TripSync' : ''}
+        alt={markOnly ? 'tripSync' : ''}
         width={size}
         height={size}
         // The mark is small and appears in the header of every page, so it
@@ -52,7 +52,7 @@ export function Logo({
       />
       {!markOnly && (
         <span className="flex flex-col gap-1">
-          <span className={textClassName}>TripSync</span>
+          <span className={textClassName}>tripSync</span>
           {subtitle && <span className="eyebrow">{subtitle}</span>}
         </span>
       )}

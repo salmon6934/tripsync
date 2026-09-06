@@ -12,6 +12,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { UserMenu } from '@/components/UserMenu';
 import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { usePresence } from '@/hooks/usePresence';
 import { useSocket } from '@/hooks/useSocket';
 import { formatDateRange } from '@/lib/format';
@@ -54,6 +55,7 @@ interface MiniBlock {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export default function TripLayout({ children }: { children: React.ReactNode }) {
+  const authStatus = useAuthGuard();
   const { data: session } = useSession();
   const params = useParams();
   const pathname = usePathname();
@@ -240,8 +242,19 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
   );
   const sectionLabel = activeTab?.name ?? 'Trip';
 
+  // Auth gate. Kept after all hooks above (Rules of Hooks): signed-out visitors
+  // are redirected by useAuthGuard, and until the session is authenticated we
+  // render a spinner instead of the trip chrome.
+  if (authStatus !== 'authenticated') {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Navigation Header */}
       <header className="border-b border-border bg-card shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

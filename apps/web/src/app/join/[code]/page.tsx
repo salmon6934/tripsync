@@ -87,7 +87,7 @@ export default function JoinTripPage() {
   }, [status, session?.accessToken, code, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary-tint px-4">
+    <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl bg-card p-8 text-center shadow-lg">
         {state === 'joining' ? (
           <>
