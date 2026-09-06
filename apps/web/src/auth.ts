@@ -39,7 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             id: data.user.id,
             email: data.user.email,
             name: data.user.name,
-            image: data.user.avatarUrl,
+            avatarId: data.user.avatarId,
             accessToken: data.token,
           };
         } catch {
@@ -66,17 +66,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      // On first sign-in, persist the backend token into the JWT
+      // On first sign-in, persist the backend token + avatar into the JWT
       if (user) {
         token.userId = user.id;
         token.accessToken = (user as any).accessToken;
+        token.avatarId = (user as any).avatarId ?? null;
       }
       return token;
     },
     async session({ session, token }) {
-      // Expose userId and accessToken to the client session
+      // Expose userId, accessToken and avatar to the client session
       if (session.user) {
         session.user.id = token.userId as string;
+        session.user.avatarId = (token.avatarId as number | null | undefined) ?? null;
         (session as any).accessToken = token.accessToken;
       }
       return session;

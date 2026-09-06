@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowDownUp, Bell, BellOff, Plus, Trash2, UserPlus, type LucideIcon } from 'lucide-react';
 import { useNotifications, Notification } from '@/hooks/useNotifications';
 
 /**
@@ -20,21 +21,18 @@ function relativeTime(dateStr: string): string {
 }
 
 /**
- * Returns an icon/emoji for a notification type.
+ * Lucide icon per notification type (rendered in the secondary theme color).
  */
-function notificationIcon(type: Notification['type']): string {
-  switch (type) {
-    case 'block_created':
-      return '➕';
-    case 'block_moved':
-      return '↕️';
-    case 'block_deleted':
-      return '🗑️';
-    case 'member_joined':
-      return '👋';
-    default:
-      return '🔔';
-  }
+const NOTIFICATION_ICONS: Record<Notification['type'], LucideIcon> = {
+  block_created: Plus,
+  block_moved: ArrowDownUp,
+  block_deleted: Trash2,
+  member_joined: UserPlus,
+};
+
+function NotificationIcon({ type }: { type: Notification['type'] }) {
+  const Icon = NOTIFICATION_ICONS[type] ?? Bell;
+  return <Icon className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />;
 }
 
 /**
@@ -77,24 +75,9 @@ export function NotificationBell() {
         aria-label="Notifications"
       >
         {muted ? (
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l16 16" />
-          </svg>
+          <BellOff className="h-5 w-5 text-secondary" aria-hidden="true" />
         ) : (
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
+          <Bell className="h-5 w-5 text-secondary" aria-hidden="true" />
         )}
 
         {/* Unread count badge */}
@@ -107,7 +90,7 @@ export function NotificationBell() {
 
       {/* Dropdown panel */}
       {open && (
-        <div className="absolute bottom-full right-0 z-50 mb-2 w-80 rounded-lg border border-border bg-card shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-border bg-card shadow-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
@@ -139,7 +122,7 @@ export function NotificationBell() {
                   }`}
                 >
                   {/* Icon */}
-                  <span className="mt-0.5 text-base">{notificationIcon(notification.type)}</span>
+                  <NotificationIcon type={notification.type} />
 
                   {/* Content */}
                   <div className="min-w-0 flex-1">

@@ -8,7 +8,7 @@ import { Socket } from 'socket.io-client';
 export interface PresenceInfo {
   userId: string;
   userName: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
   editingBlockId: string | null;
   lastHeartbeat: string;
 }
@@ -40,7 +40,7 @@ export function usePresence({ socket, tripId, currentUserId }: UsePresenceOption
       setOnlineMembers(members);
     }
 
-    function handleJoin(data: { userId: string; userName: string; avatarUrl: string | null }) {
+    function handleJoin(data: { userId: string; userName: string; avatarId: number | null }) {
       setOnlineMembers((prev) => {
         if (prev.some((m) => m.userId === data.userId)) return prev;
         return [
@@ -48,7 +48,7 @@ export function usePresence({ socket, tripId, currentUserId }: UsePresenceOption
           {
             userId: data.userId,
             userName: data.userName,
-            avatarUrl: data.avatarUrl,
+            avatarId: data.avatarId,
             editingBlockId: null,
             lastHeartbeat: new Date().toISOString(),
           },

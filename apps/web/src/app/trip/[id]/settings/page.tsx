@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { COMMON_TIMEZONES, suggestTimezoneFromDestination, timezoneAbbreviation } from '@/lib/format';
 import { FloatingInput } from '@/components/ui/floating-input';
+import { Avatar } from '@/components/ui/avatar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -14,7 +15,7 @@ interface Member {
   role: string;
   userName: string;
   userEmail: string;
-  userAvatarUrl: string | null;
+  userAvatarId: number | null;
 }
 
 interface TripDetails {
@@ -330,11 +331,7 @@ export default function TripSettingsPage() {
                 <div
                   className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(m.userId)}`}
                 >
-                  {m.userAvatarUrl ? (
-                    <img src={m.userAvatarUrl} alt={m.userName} className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    m.userName.charAt(0).toUpperCase()
-                  )}
+                  <Avatar avatarId={m.userAvatarId} name={m.userName} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">

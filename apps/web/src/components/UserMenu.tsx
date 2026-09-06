@@ -3,29 +3,24 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 
+import { Avatar } from '@/components/ui/avatar';
+
 export function UserMenu() {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
 
   if (!session?.user) return null;
 
-  const initials = session.user.name
-    ? session.user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : '?';
+  const name = session.user.name ?? '';
 
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-tint text-sm font-medium text-primary-tint-foreground hover:bg-primary-tint focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary-tint text-sm font-medium text-primary-tint-foreground hover:bg-primary-tint focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         aria-label="User menu"
       >
-        {initials}
+        <Avatar avatarId={session.user.avatarId} name={name || '?'} />
       </button>
 
       {open && (

@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ActivityCategory } from '@tripsync/shared';
 import { formatTime, formatRelativeTime, formatAbsoluteDate, isWithinHours } from '@/lib/format';
+import { Avatar } from '@/components/ui/avatar';
 
 export interface BlockData {
   id: string;
@@ -27,7 +28,7 @@ export interface BlockData {
 
 export interface MemberInfo {
   name: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
 }
 
 // Category accents remapped onto the Wayfarer palette (see globals.css @theme):
@@ -70,16 +71,12 @@ interface SortableBlockProps {
   onToggleSelect: (blockId: string) => void;
 }
 
-function MiniAvatar({ userId, name, avatarUrl }: { userId: string; name: string; avatarUrl: string | null }) {
+function MiniAvatar({ userId, name, avatarId }: { userId: string; name: string; avatarId: number | null }) {
   return (
     <span
-      className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold text-white ${avatarColor(userId)}`}
+      className={`inline-flex h-4 w-4 items-center justify-center overflow-hidden rounded-full text-[9px] font-semibold text-white ${avatarColor(userId)}`}
     >
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" />
-      ) : (
-        name.charAt(0).toUpperCase()
-      )}
+      <Avatar avatarId={avatarId} name={name} />
     </span>
   );
 }
@@ -197,7 +194,7 @@ export function SortableBlock({
               className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground"
               title={`Added by ${creator.name}${block.createdAt ? ` on ${formatAbsoluteDate(block.createdAt)}` : ''}`}
             >
-              <MiniAvatar userId={block.createdBy} name={creator.name} avatarUrl={creator.avatarUrl} />
+              <MiniAvatar userId={block.createdBy} name={creator.name} avatarId={creator.avatarId} />
               <span className="truncate">Added by {creator.name}</span>
             </div>
           )}

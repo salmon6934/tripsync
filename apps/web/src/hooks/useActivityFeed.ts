@@ -19,6 +19,7 @@ export interface ActivityEntry {
   metadata: Record<string, unknown> | null;
   createdAt: string;
   userName: string;
+  avatarId: number | null;
   description: string;
 }
 

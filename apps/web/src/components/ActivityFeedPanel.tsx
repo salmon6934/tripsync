@@ -1,6 +1,7 @@
 'use client';
 
 import { ActivityEntry } from '@/hooks/useActivityFeed';
+import { Avatar } from '@/components/ui/avatar';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,10 +23,6 @@ function getAvatarColor(userId: string): string {
     hash = (hash * 31 + userId.charCodeAt(i)) | 0;
   }
   return avatarColors[Math.abs(hash) % avatarColors.length];
-}
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
 }
 
 function relativeTime(dateStr: string): string {
@@ -106,9 +103,9 @@ export function ActivityFeedPanel({
                 <div key={entry.id} className="flex items-start gap-3">
                   {/* Avatar */}
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${getAvatarColor(entry.userId)}`}
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold text-white ${getAvatarColor(entry.userId)}`}
                   >
-                    {getInitial(entry.userName)}
+                    <Avatar avatarId={entry.avatarId} name={entry.userName} />
                   </div>
 
                   {/* Description + timestamp */}

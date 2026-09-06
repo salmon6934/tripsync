@@ -1,5 +1,6 @@
 'use client';
 
+import { Avatar } from '@/components/ui/avatar';
 import { formatRelativeTime } from '@/lib/format';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -7,7 +8,7 @@ import { formatRelativeTime } from '@/lib/format';
 export interface MemberWithStatus {
   userId: string;
   userName: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
   role: string;
   isOnline: boolean;
   isEditing: boolean;
@@ -44,10 +45,6 @@ function getAvatarColor(userId: string): string {
     hash = (hash * 31 + userId.charCodeAt(i)) | 0;
   }
   return avatarColors[Math.abs(hash) % avatarColors.length];
-}
-
-function getInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
 }
 
 // ─── MembersPanel Component ──────────────────────────────────────────────────
@@ -159,15 +156,7 @@ function MemberRow({ member }: { member: MemberWithStatus }) {
       <div
         className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ring-2 ${ringColor} text-xs font-semibold text-white ${getAvatarColor(member.userId)}`}
       >
-        {member.avatarUrl ? (
-          <img
-            src={member.avatarUrl}
-            alt={member.userName}
-            className="h-full w-full rounded-full object-cover"
-          />
-        ) : (
-          getInitial(member.userName)
-        )}
+        <Avatar avatarId={member.avatarId} name={member.userName} />
       </div>
 
       {/* Name + status */}

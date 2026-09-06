@@ -22,6 +22,7 @@ import type { BlockData, MemberInfo } from './SortableBlock';
 import { useSocket } from '../../hooks/useSocket';
 import { useTripSync } from '../../hooks/useTripSync';
 import type { ActivityCategory } from '@tripsync/shared';
+import { Bed, MapPinned, Navigation2, Utensils, type LucideIcon } from 'lucide-react';
 import { timezoneAbbreviation } from '@/lib/format';
 
 interface DayData {
@@ -32,11 +33,11 @@ interface DayData {
   blocks: BlockData[];
 }
 
-const CATEGORIES: { key: ActivityCategory; label: string; icon: string }[] = [
-  { key: 'food', label: 'Food', icon: '🍽️' },
-  { key: 'travel', label: 'Travel', icon: '✈️' },
-  { key: 'stay', label: 'Stay', icon: '🏨' },
-  { key: 'activity', label: 'Activity', icon: '🎯' },
+const CATEGORIES: { key: ActivityCategory; label: string; icon: LucideIcon }[] = [
+  { key: 'food', label: 'Food', icon: Utensils },
+  { key: 'travel', label: 'Travel', icon: Navigation2 },
+  { key: 'stay', label: 'Stay', icon: Bed },
+  { key: 'activity', label: 'Activity', icon: MapPinned },
 ];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -113,7 +114,7 @@ export function ItineraryBoard() {
         const data = await res.json();
         const map = new Map<string, MemberInfo>();
         for (const m of data.members || []) {
-          map.set(m.userId, { name: m.userName, avatarUrl: m.userAvatarUrl });
+          map.set(m.userId, { name: m.userName, avatarId: m.userAvatarId });
           if (m.userId === currentUserId) setRole(m.role);
         }
         setMembers(map);
@@ -628,14 +629,15 @@ export function ItineraryBoard() {
               <button
                 key={c.key}
                 onClick={() => toggleCategory(c.key)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
                   active
                     ? 'border-primary bg-primary-tint text-primary-tint-foreground'
                     : 'border-border bg-card text-muted-foreground hover:bg-muted'
                 }`}
                 aria-pressed={active}
               >
-                {c.icon} {c.label}
+                <c.icon className="h-3.5 w-3.5 text-secondary" aria-hidden="true" />
+                {c.label}
               </button>
             );
           })}

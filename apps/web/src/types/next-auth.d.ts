@@ -7,6 +7,8 @@ declare module 'next-auth' {
       email: string;
       name: string;
       image?: string | null;
+      /** Id of the user's chosen built-in avatar (see @tripsync/shared). */
+      avatarId?: number | null;
     };
     accessToken?: string;
   }
@@ -14,6 +16,7 @@ declare module 'next-auth' {
   interface User {
     id: string;
     accessToken?: string;
+    avatarId?: number | null;
   }
 }
 
@@ -21,5 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     userId?: string;
     accessToken?: string;
+    avatarId?: number | null;
   }
 }

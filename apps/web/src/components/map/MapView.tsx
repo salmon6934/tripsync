@@ -15,6 +15,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap } fro
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import 'leaflet/dist/leaflet.css';
+import { Bed, MapPinned, Navigation2, Utensils, type LucideIcon } from 'lucide-react';
 import type { ActivityCategory } from '@tripsync/shared';
 import type { MapPin, RouteSegment } from '@/lib/map-utils';
 import {
@@ -83,12 +84,18 @@ const FALLBACK_COLOR = '#c13a28'; // --color-primary
 /** Keeps `fitBounds` from zooming all the way in on a single pin. */
 const MAX_FIT_ZOOM = 15;
 
-const CATEGORY_ICONS: Record<ActivityCategory, string> = {
-  food: '🍽️',
-  travel: '✈️',
-  stay: '🏨',
-  activity: '🎯',
+const CATEGORY_ICONS: Record<ActivityCategory, LucideIcon> = {
+  food: Utensils,
+  travel: Navigation2,
+  stay: Bed,
+  activity: MapPinned,
 };
+
+/** Renders the lucide category icon (secondary theme color) for a map pin. */
+function CategoryIcon({ category }: { category: ActivityCategory }) {
+  const Icon = CATEGORY_ICONS[category];
+  return <Icon className="h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />;
+}
 
 /**
  * Keeps the Leaflet view in sync when the resolved center changes (e.g. after
@@ -242,7 +249,7 @@ export function MapView({
             <Popup>
               <div className="min-w-[180px] text-sm">
                 <p className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <span aria-hidden="true">{CATEGORY_ICONS[pin.category]}</span>
+                  <CategoryIcon category={pin.category} />
                   {pin.title}
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">

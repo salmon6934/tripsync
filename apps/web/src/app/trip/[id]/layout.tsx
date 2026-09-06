@@ -9,7 +9,6 @@ import { ActivityFeedButton } from '@/components/ActivityFeedButton';
 import { ActivityFeedPanel } from '@/components/ActivityFeedPanel';
 import { Logo } from '@/components/Logo';
 import { NotificationBell } from '@/components/NotificationBell';
-import { UserMenu } from '@/components/UserMenu';
 import { MembersPanel, MembersButton, MemberWithStatus } from '@/components/presence/OnlineAvatars';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -31,7 +30,7 @@ interface TripMember {
   role: string;
   userName: string;
   userEmail: string;
-  userAvatarUrl: string | null;
+  userAvatarId: number | null;
 }
 
 interface TripInfo {
@@ -216,7 +215,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
     return {
       userId: m.userId,
       userName: m.userName,
-      avatarUrl: m.userAvatarUrl,
+      avatarId: m.userAvatarId,
       role: m.role,
       isOnline: !!presence,
       isEditing: !!presence?.editingBlockId,
@@ -282,7 +281,6 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
             />
             <MembersButton onlineCount={onlineCount} onClick={toggleMembers} />
             <NotificationBell />
-            <UserMenu />
           </div>
         </div>
       </header>
