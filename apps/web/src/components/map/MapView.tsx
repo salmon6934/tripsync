@@ -59,6 +59,25 @@ export interface MapViewProps {
 
 /** Fallback center when there are neither pins nor a destination (mid-world). */
 const DEFAULT_CENTER: [number, number] = [20, 0];
+
+/**
+ * Basemap tile source. Defaults to the keyless OpenStreetMap standard tiles,
+ * which render without watermarks and require no API key.
+ *
+ * CARTO's "Voyager" basemap (previously used here for its warmer palette) now
+ * stamps unkeyed tiles with an "API KEY REQUIRED" watermark, so it can't be
+ * used anonymously anymore. To restore a warmer style, provide a keyed URL via
+ * `NEXT_PUBLIC_MAP_TILE_URL` (and optional `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` /
+ * `NEXT_PUBLIC_MAP_TILE_SUBDOMAINS`) — e.g. a MapTiler or Stadia style that
+ * embeds your key in the URL.
+ */
+const TILE_URL =
+  process.env.NEXT_PUBLIC_MAP_TILE_URL ??
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTRIBUTION =
+  process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION ??
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const TILE_SUBDOMAINS = process.env.NEXT_PUBLIC_MAP_TILE_SUBDOMAINS ?? 'abc';
 const DEFAULT_ZOOM = 13;
 const FALLBACK_COLOR = '#c13a28'; // --color-primary
 /** Keeps `fitBounds` from zooming all the way in on a single pin. */
@@ -171,15 +190,14 @@ export function MapView({
       <FitToPins pins={pins} enabled={fitEnabled} />
 
       {/*
-        Warm-toned CARTO "Voyager" basemap — no API key required, and its soft
-        cream/terracotta cartography matches the Wayfarer reference far better
-        than standard OSM. A keyed Stadia/MapTiler style (e.g. a watercolor
-        look) could be swapped in later via env once a key is available.
+        Basemap tiles. Defaults to keyless OpenStreetMap standard tiles; a
+        warmer keyed style can be supplied via NEXT_PUBLIC_MAP_TILE_URL. See the
+        TILE_URL constant above for details.
       */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
+        attribution={TILE_ATTRIBUTION}
+        url={TILE_URL}
+        subdomains={TILE_SUBDOMAINS}
       />
 
       {routes.map((segment) => {

@@ -325,10 +325,15 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <nav className="border-b border-border bg-card">
+      {/* Page content — extra bottom padding leaves room for the fixed bottom nav. */}
+      <main className="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
+        {children}
+      </main>
+
+      {/* Bottom Tab Navigation — pinned to the viewport bottom inside the trip. */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card shadow-[0_-2px_10px_-4px_rgb(64_45_30_/_0.15)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="-mb-px flex space-x-8 overflow-x-auto">
+          <div className="-mt-px flex justify-center gap-4 overflow-x-auto sm:gap-10">
             {tabs.map((tab) => {
               const tabHref = `${basePath}${tab.href}`;
               const isActive =
@@ -340,7 +345,7 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                 <Link
                   key={tab.name}
                   href={tab.href === '' ? basePath : tabHref}
-                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition ${
+                  className={`whitespace-nowrap border-t-2 px-2 py-4 text-sm font-medium transition ${
                     isActive
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
@@ -353,11 +358,6 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
       </nav>
-
-      {/* Page content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {children}
-      </main>
 
       {/* Members slide-in panel (visible across all tabs) */}
       <MembersPanel

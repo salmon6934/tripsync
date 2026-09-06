@@ -61,7 +61,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   pages: {
-    signIn: '/login',
+    // The home route hosts the combined sign-in / sign-up experience.
+    signIn: '/',
   },
   callbacks: {
     async jwt({ token, user }) {

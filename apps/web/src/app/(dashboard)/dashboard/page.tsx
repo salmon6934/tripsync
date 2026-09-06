@@ -6,6 +6,33 @@ import { fetchTrips, createTripApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LocationSearchInput, type LocationValue } from '@/components/itinerary/LocationSearchInput';
+import { ChronoSelect } from '@/components/ui/chrono-select';
+
+/**
+ * Trip dates travel over the wire as `YYYY-MM-DD` strings (the server coerces
+ * them with `z.coerce.date()`). ChronoSelect works in `Date` objects, so these
+ * helpers bridge the two — using *local* date parts to avoid the UTC-midnight
+ * off-by-one that `new Date('YYYY-MM-DD')` introduces in negative timezones.
+ */
+function ymdToDate(value: string): Date | undefined {
+  if (!value) return undefined;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
+}
+
+function dateToYmd(date: Date | undefined): string {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+const TRIP_YEAR_RANGE: [number, number] = [
+  new Date().getFullYear() - 1,
+  new Date().getFullYear() + 6,
+];
 
 interface Trip {
   id: string;
@@ -180,6 +207,16 @@ function CreateTripModal({
       return;
     }
 
+    if (!startDate || !endDate) {
+      setError('Please pick both a start and end date');
+      return;
+    }
+
+    if (endDate < startDate) {
+      setError('End date must be on or after the start date');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -238,29 +275,36 @@ function CreateTripModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-foreground">
+              <label htmlFor="startDate" className="mb-1 block text-sm font-medium text-foreground">
                 Start Date
               </label>
-              <input
+              <ChronoSelect
                 id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                value={ymdToDate(startDate)}
+                onChange={(date) => {
+                  const next = dateToYmd(date);
+                  setStartDate(next);
+                  // Keep the range valid: clear an end date that now precedes the start.
+                  if (endDate && next && endDate < next) setEndDate('');
+                }}
+                placeholder="Start date"
+                yearRange={TRIP_YEAR_RANGE}
+                className="w-full"
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-foreground">
+              <label htmlFor="endDate" className="mb-1 block text-sm font-medium text-foreground">
                 End Date
               </label>
-              <input
+              <ChronoSelect
                 id="endDate"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                value={ymdToDate(endDate)}
+                onChange={(date) => setEndDate(dateToYmd(date))}
+                placeholder="End date"
+                yearRange={TRIP_YEAR_RANGE}
+                // End must be on or after the start (mirrors server validation).
+                disabled={startDate ? { before: ymdToDate(startDate) as Date } : undefined}
+                className="w-full"
               />
             </div>
           </div>

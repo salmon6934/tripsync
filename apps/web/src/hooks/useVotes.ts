@@ -5,6 +5,7 @@ import { Socket } from 'socket.io-client';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
 import type { Poll, Tally } from '@/components/votes/PollCard';
+import { isNotificationsMuted } from '@/lib/notification-mute';
 
 interface UseVotesOptions {
   socket: Socket | null;
@@ -90,7 +91,7 @@ export function useVotes({ socket, tripId, token, currentUserId }: UseVotesOptio
         return [newPoll, ...prev];
       });
       setTallies((prev) => ({ ...prev, [newPoll.id]: [] }));
-      if (data.userId !== currentUserId) {
+      if (data.userId !== currentUserId && !isNotificationsMuted()) {
         toast.info('New poll created', { description: newPoll.question });
       }
     }
@@ -107,7 +108,9 @@ export function useVotes({ socket, tripId, token, currentUserId }: UseVotesOptio
             : p
         )
       );
-      toast.info('A poll has been resolved');
+      if (!isNotificationsMuted()) {
+        toast.info('A poll has been resolved');
+      }
     }
 
     socket.on('vote:created', handleVoteCreated);

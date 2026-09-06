@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Enter/exit animation utilities (animate-in, fade-in-0, zoom-in-95,
+ * slide-in-from-*) used by the Radix-backed Popover/Select primitives. */
+@import "tw-animate-css";
 
 /*
  * ─── TripSync design tokens ───────────────────────────────────────────────
@@ -34,6 +37,18 @@
   --color-border: #e3dccc; /* warm hairline border */
   --color-input: #e3dccc;
   --color-ring: #c13a28; /* focus ring = primary */
+
+  /* ─── shadcn/originui aliases ───────────────────────────────────────────
+   * Some ported primitives (Button, Popover, Select, Calendar, ChronoSelect)
+   * reference the conventional shadcn token names. These are thin aliases onto
+   * the TripSync palette so those components inherit the warm theme without
+   * editing every utility class. */
+  --color-popover: #fbf9f3; /* = card surface */
+  --color-popover-foreground: #2b2620; /* = foreground */
+  --color-accent: #e7e1d3; /* = muted (hover ground) */
+  --color-accent-foreground: #2b2620; /* = foreground */
+  --color-destructive: #c0392b; /* = danger */
+  --color-destructive-foreground: #ffffff;
 
   /* ─── Primary — terracotta maroon ──────────────────────────────────────── */
   --color-primary: #c13a28;

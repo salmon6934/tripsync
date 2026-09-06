@@ -1,163 +1,18 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { Suspense, useEffect, useState } from 'react';
-import { signIn } from 'next-auth/react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-import { AvatarPicker } from '@/components/ui/avatar-picker';
-import { AVATARS } from '@/lib/avatars';
-
-export default function SignupPage() {
-  return (
-    <Suspense fallback={<div className="rounded-2xl bg-card p-8 shadow-lg" />}>
-      <SignupForm />
-    </Suspense>
-  );
-}
-
-function SignupForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  // Only allow relative callback URLs to prevent open-redirects.
-  const rawCallback = searchParams.get('callbackUrl');
-  const callbackUrl = rawCallback && rawCallback.startsWith('/') ? rawCallback : '/dashboard';
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [avatarId, setAvatarId] = useState(AVATARS[0].id);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Randomly assign a default avatar on mount rather than during render: a
-  // random value picked while rendering would differ between the server-rendered
-  // HTML and the first client render, which React reports as a hydration error.
-  useEffect(() => {
-    setAvatarId(AVATARS[Math.floor(Math.random() * AVATARS.length)].id);
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      // First, create the account via our proxy API route
-      const signupRes = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, avatarId }),
-      });
-
-      if (!signupRes.ok) {
-        const data = await signupRes.json();
-        setError(data.message || 'Signup failed');
-        setLoading(false);
-        return;
-      }
-
-      // Then sign in with the new credentials
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError('Account created but sign-in failed. Please log in manually.');
-      } else {
-        router.push(callbackUrl);
-      }
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="rounded-2xl bg-card p-8 shadow-lg">
-      <h2 className="mb-6 text-2xl font-semibold text-foreground">Create an account</h2>
-
-      {error && (
-        <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <AvatarPicker
-          avatars={AVATARS}
-          selectedId={avatarId}
-          onSelect={(avatar) => setAvatarId(avatar.id)}
-          username={name.trim() || 'Your name'}
-          subtitle="Pick your avatar — you can change it later"
-        />
-
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-foreground">
-            Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="Your name"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-foreground">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-foreground">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="At least 8 characters"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
-        >
-          {loading ? 'Creating account...' : 'Sign up'}
-        </button>
-      </form>
-
-      <div className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
-        <Link
-          href={rawCallback ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
-          className="font-medium text-primary hover:text-primary-hover"
-        >
-          Sign in
-        </Link>
-      </div>
-    </div>
-  );
+/**
+ * The dedicated /signup route has been folded into the home route (`/`). Send
+ * legacy links to the combined experience with the sign-up mode preselected,
+ * preserving a relative callbackUrl.
+ */
+export default async function SignupRedirect({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+  const cb = callbackUrl && callbackUrl.startsWith('/') ? callbackUrl : undefined;
+  const params = new URLSearchParams({ mode: 'signup' });
+  if (cb) params.set('callbackUrl', cb);
+  redirect(`/?${params.toString()}`);
 }

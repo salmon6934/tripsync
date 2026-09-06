@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 
+import { isNotificationsMuted } from '@/lib/notification-mute';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 const PAGE_SIZE = 20;
 
@@ -134,9 +136,12 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
         return [entry, ...prev];
       });
 
-      // Only toast + count unread for other users' actions.
+      // Count unread for other users' actions; only pop a toast when the user
+      // hasn't muted notifications (muting suppresses the popup, not the count).
       if (entry.userId !== currentUserId) {
-        toast(entry.description, { duration: 4000 });
+        if (!isNotificationsMuted()) {
+          toast(entry.description, { duration: 4000 });
+        }
         setUnreadCount((prev) => prev + 1);
       }
     }

@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { io, Socket } from 'socket.io-client';
 
+import { isNotificationsMuted, useNotificationMute } from '@/lib/notification-mute';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export interface Notification {
@@ -29,22 +31,10 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [muted, setMuted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('notifications_muted') === 'true';
-    }
-    return false;
-  });
+  // Mute preference is shared across every hook that raises popup toasts, so
+  // muting here silences all of them (see lib/notification-mute).
+  const { muted, toggleMute } = useNotificationMute();
   const socketRef = useRef<Socket | null>(null);
-
-  // Toggle mute state
-  const toggleMute = useCallback(() => {
-    setMuted((prev) => {
-      const next = !prev;
-      localStorage.setItem('notifications_muted', String(next));
-      return next;
-    });
-  }, []);
 
   // Fetch unread count from API
   const fetchUnreadCount = useCallback(async () => {
@@ -132,8 +122,8 @@ export function useNotifications() {
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
-      // Show toast only if not muted
-      if (!muted) {
+      // Show the popup only when not muted (read the latest value at fire time).
+      if (!isNotificationsMuted()) {
         toast(notification.title, {
           description: notification.message,
           duration: 5000,
@@ -145,7 +135,7 @@ export function useNotifications() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token, muted]);
+  }, [token]);
 
   // Fetch initial data
   useEffect(() => {

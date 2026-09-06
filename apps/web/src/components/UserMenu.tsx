@@ -29,13 +29,13 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-56 rounded-lg border border-border bg-card py-2 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-card py-2 shadow-lg">
           <div className="border-b border-border px-4 py-2">
             <p className="text-sm font-medium text-foreground">{session.user.name}</p>
             <p className="text-xs text-muted-foreground">{session.user.email}</p>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => signOut({ callbackUrl: '/' })}
             className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-muted"
           >
             Sign out
