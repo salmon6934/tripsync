@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { FloatingInput } from '@/components/ui/floating-input';
 import {
   formatMoney,
   parseMoneyToMinor,
@@ -89,37 +90,31 @@ export function RecordPaymentModal({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="payment-amount" className="block text-sm font-medium text-foreground">
-              Amount
-            </label>
-            <input
+            <FloatingInput
               id="payment-amount"
+              label="Amount"
+              size="sm"
               type="number"
               step={decimals > 0 ? '0.01' : '1'}
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="mt-1 text-xs text-muted-foreground">
               Suggested: {formatMoney(draft.amountMinor, draft.currency)} · partial payments allowed
             </p>
           </div>
 
-          <div>
-            <label htmlFor="payment-note" className="block text-sm font-medium text-foreground">
-              Note (optional)
-            </label>
-            <input
-              id="payment-note"
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Paid via UPI"
-              maxLength={500}
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
+          <FloatingInput
+            id="payment-note"
+            label="Note (optional)"
+            size="sm"
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Paid via UPI"
+            maxLength={500}
+          />
 
           <div className="flex gap-3 pt-1">
             <button

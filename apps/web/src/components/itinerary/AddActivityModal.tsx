@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { ActivityCategory } from '@tripsync/shared';
+import { FloatingInput } from '@/components/ui/floating-input';
 import { LocationSearchInput, type LocationValue } from './LocationSearchInput';
 
 export interface ActivityFormValues {
@@ -153,20 +154,16 @@ export function AddActivityModal({
         {error && <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="activity-title" className="block text-sm font-medium text-foreground">
-              Title <span className="text-danger">*</span>
-            </label>
-            <input
-              id="activity-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Visit Eiffel Tower"
-            />
-          </div>
+          <FloatingInput
+            id="activity-title"
+            label="Title *"
+            size="sm"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            placeholder="Visit Eiffel Tower"
+          />
 
           <div>
             <label htmlFor="activity-category" className="block text-sm font-medium text-foreground">
@@ -220,35 +217,28 @@ export function AddActivityModal({
             tripId={tripId}
           />
 
-          <div>
-            <label htmlFor="estimated-cost" className="block text-sm font-medium text-foreground">
-              Estimated Cost
-            </label>
-            <input
-              id="estimated-cost"
-              type="number"
-              step="0.01"
-              min="0"
-              value={estimatedCost}
-              onChange={(e) => setEstimatedCost(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="25.00"
-            />
-          </div>
+          <FloatingInput
+            id="estimated-cost"
+            label="Estimated Cost"
+            size="sm"
+            type="number"
+            step="0.01"
+            min="0"
+            value={estimatedCost}
+            onChange={(e) => setEstimatedCost(e.target.value)}
+            placeholder="25.00"
+          />
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-foreground">
-              Notes
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Any details, booking references, reminders…"
-            />
-          </div>
+          <FloatingInput
+            id="description"
+            label="Notes"
+            size="sm"
+            multiline
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            placeholder="Any details, booking references, reminders…"
+          />
 
           <div className="flex gap-3 pt-2">
             <button

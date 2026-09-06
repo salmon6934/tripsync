@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { COMMON_TIMEZONES, suggestTimezoneFromDestination, timezoneAbbreviation } from '@/lib/format';
+import { FloatingInput } from '@/components/ui/floating-input';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -388,16 +389,14 @@ export default function TripSettingsPage() {
           </p>
 
           <div className="mt-4">
-            <label htmlFor="cover-url" className="block text-sm font-medium text-foreground">
-              Cover Image URL
-            </label>
-            <input
+            <FloatingInput
               id="cover-url"
+              label="Cover Image URL"
+              size="sm"
               type="url"
               value={coverUrl}
               onChange={(e) => setCoverUrl(e.target.value)}
               placeholder="https://images.example.com/paris.jpg"
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             {coverUrl.trim() && (
               <div className="mt-3 h-32 w-full overflow-hidden rounded-lg border border-border">

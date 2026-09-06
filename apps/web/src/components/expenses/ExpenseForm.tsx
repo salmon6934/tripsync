@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import { FloatingInput } from '@/components/ui/floating-input';
 import type { ExpensePayload, ExpenseWithSplits } from '@/hooks/useExpenses';
 import {
   formatMoney,
@@ -248,36 +249,30 @@ export function ExpenseForm({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
-          <div>
-            <label htmlFor="expense-title" className="block text-sm font-medium text-foreground">
-              Title <span className="text-danger">*</span>
-            </label>
-            <input
-              id="expense-title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Dinner at the beach shack"
-              maxLength={200}
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
+          <FloatingInput
+            id="expense-title"
+            label="Title *"
+            size="sm"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Dinner at the beach shack"
+            maxLength={200}
+          />
 
           {/* Amount + currency */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 items-end gap-3">
             <div className="col-span-2">
-              <label htmlFor="expense-amount" className="block text-sm font-medium text-foreground">
-                Amount <span className="text-danger">*</span>
-              </label>
-              <input
+              <FloatingInput
                 id="expense-amount"
+                label="Amount *"
+                size="sm"
                 type="number"
                 step={decimals > 0 ? '0.01' : '1'}
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             <div>

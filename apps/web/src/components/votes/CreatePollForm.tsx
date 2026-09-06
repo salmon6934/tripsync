@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { FloatingInput } from '@/components/ui/floating-input';
+
 interface OptionInput {
   title: string;
   description: string;
@@ -60,17 +62,15 @@ export function CreatePollForm({ onSubmit, onCancel, isSubmitting }: CreatePollF
 
       {/* Question */}
       <div className="mt-4">
-        <label htmlFor="poll-question" className="block text-sm font-medium text-foreground">
-          Question
-        </label>
-        <input
+        <FloatingInput
           id="poll-question"
+          label="Question"
+          size="sm"
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="What should we do for dinner?"
           maxLength={500}
-          className="mt-1 block w-full rounded-md border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
@@ -82,22 +82,24 @@ export function CreatePollForm({ onSubmit, onCancel, isSubmitting }: CreatePollF
         <div className="mt-2 space-y-3">
           {options.map((option, index) => (
             <div key={index} className="flex items-start gap-2">
-              <div className="flex-1 space-y-1">
-                <input
+              <div className="flex-1 space-y-2">
+                <FloatingInput
+                  id={`poll-option-${index}-title`}
+                  label={`Option ${index + 1}`}
+                  size="sm"
                   type="text"
                   value={option.title}
                   onChange={(e) => handleOptionChange(index, 'title', e.target.value)}
-                  placeholder={`Option ${index + 1}`}
                   maxLength={200}
-                  className="block w-full rounded-md border border-border px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                <input
+                <FloatingInput
+                  id={`poll-option-${index}-description`}
+                  label="Description (optional)"
+                  size="sm"
                   type="text"
                   value={option.description}
                   onChange={(e) => handleOptionChange(index, 'description', e.target.value)}
-                  placeholder="Description (optional)"
                   maxLength={500}
-                  className="block w-full rounded-md border border-border px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               {options.length > 2 && (

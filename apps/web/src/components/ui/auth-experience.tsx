@@ -24,13 +24,11 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion';
 import { GrainGradient } from '@paper-design/shaders-react';
 
 import { AvatarPicker } from '@/components/ui/avatar-picker';
+import { FloatingInput } from '@/components/ui/floating-input';
 import { AVATARS } from '@/lib/avatars';
 
 type Mode = 'signin' | 'signup';
 type SignupStep = 'form' | 'avatar';
-
-const FIELD_CLASS =
-  'h-12 w-full rounded-[10px] border border-border bg-card px-4 text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary';
 
 // Stable module-level constants — passing fresh array/string literals on every
 // render could nudge the shader to re-evaluate; these keep its props identical.
@@ -241,15 +239,15 @@ export function AuthExperience() {
 
                   {isSignup ? (
                     <form onSubmit={handleSignupDetails} className="mt-6 space-y-4">
-                      <Field id="name" label="Name" type="text" value={name} onChange={setName} placeholder="Your name" required />
-                      <Field id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
-                      <Field id="password" label="Password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" minLength={8} required />
+                      <FloatingInput id="name" label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
+                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" minLength={8} required />
                       <SubmitButton loading={false} label="Continue" loadingLabel="Continue" />
                     </form>
                   ) : (
                     <form onSubmit={handleSignin} className="mt-6 space-y-4">
-                      <Field id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" required />
-                      <Field id="password" label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
+                      <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+                      <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
                       <SubmitButton loading={loading} label="Sign in" loadingLabel="Signing in..." />
                     </form>
                   )}
@@ -335,44 +333,6 @@ const GradientBanner = memo(function GradientBanner() {
     </div>
   );
 });
-
-function Field({
-  id,
-  label,
-  type,
-  value,
-  onChange,
-  placeholder,
-  required,
-  minLength,
-}: {
-  id: string;
-  label: string;
-  type: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-  minLength?: number;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-foreground">
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        minLength={minLength}
-        className={FIELD_CLASS}
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
 
 function SubmitButton({
   loading,

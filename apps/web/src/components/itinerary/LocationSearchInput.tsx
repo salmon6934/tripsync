@@ -2,7 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { FLOATING_LABEL_FLOAT } from '@/components/ui/floating-input';
 import { useGeocodeSearch, type GeocodeResult } from '@/hooks/useGeocodeSearch';
+import { cn } from '@/lib/utils';
 
 /**
  * Location field with debounced geocoding autocomplete.
@@ -163,11 +165,7 @@ export function LocationSearchInput({
 
   return (
     <div ref={containerRef} className="relative">
-      <label htmlFor={inputId} className="block text-sm font-medium text-foreground">
-        {label}
-      </label>
-
-      <div className="relative mt-1">
+      <div className="relative">
         <input
           id={inputId}
           type="text"
@@ -176,7 +174,7 @@ export function LocationSearchInput({
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className="block w-full rounded-lg border border-border px-3 py-2 pr-9 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-muted"
+          className="peer block w-full rounded-lg border border-border bg-card px-3 py-2 pr-9 text-sm shadow-sm outline-none transition-all duration-200 ease-in-out placeholder-transparent focus:border-primary focus:placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-muted"
           placeholder={placeholder}
           autoComplete="off"
           role="combobox"
@@ -190,6 +188,16 @@ export function LocationSearchInput({
           }
           aria-describedby={`${inputId}-hint`}
         />
+
+        <label
+          htmlFor={inputId}
+          className={cn(
+            'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 rounded px-1 text-sm text-muted-foreground transition-all duration-200 ease-in-out',
+            FLOATING_LABEL_FLOAT,
+          )}
+        >
+          {label}
+        </label>
 
         {loading && (
           <span

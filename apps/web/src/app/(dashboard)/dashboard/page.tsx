@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LocationSearchInput, type LocationValue } from '@/components/itinerary/LocationSearchInput';
 import { ChronoSelect } from '@/components/ui/chrono-select';
+import { FloatingInput } from '@/components/ui/floating-input';
 
 /**
  * Trip dates travel over the wire as `YYYY-MM-DD` strings (the server coerces
@@ -249,20 +250,16 @@ function CreateTripModal({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-foreground">
-              Trip Name
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Summer Vacation"
-            />
-          </div>
+          <FloatingInput
+            id="title"
+            label="Trip Name"
+            size="sm"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            placeholder="Summer Vacation"
+          />
 
           <LocationSearchInput
             label="Destination"
@@ -396,20 +393,17 @@ function JoinTripModal({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="inviteCode" className="block text-sm font-medium text-foreground">
-              Invite Code
-            </label>
-            <input
-              id="inviteCode"
-              type="text"
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-lg border border-border px-3 py-2 font-mono shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="abc123xyz0"
-            />
-          </div>
+          <FloatingInput
+            id="inviteCode"
+            label="Invite Code"
+            size="sm"
+            type="text"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+            required
+            className="font-mono"
+            placeholder="abc123xyz0"
+          />
 
           <div className="flex gap-3 pt-2">
             <button
