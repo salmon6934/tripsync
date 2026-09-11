@@ -126,24 +126,37 @@ export function assignDayColors(totalDays: number): Map<number, string> {
 }
 
 /**
- * Converts Activity_Blocks into map pins, keeping only those with both a
- * latitude and longitude. Blocks missing either coordinate are dropped.
+ * Returns true only for a finite latitude/longitude pair that falls inside the
+ * valid geographic range (lat ∈ [-90, 90], lng ∈ [-180, 180]).
+ *
+ * Guards the map against nulls, NaN/Infinity, and out-of-range coordinates that
+ * could otherwise place a marker in a nonsensical spot or make Leaflet throw.
+ */
+export function isValidCoordinate(latitude: number | null, longitude: number | null): boolean {
+  if (latitude == null || longitude == null) return false;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  if (latitude < -90 || latitude > 90) return false;
+  if (longitude < -180 || longitude > 180) return false;
+  return true;
+}
+
+/**
+ * Converts Activity_Blocks into map pins, keeping only those with a valid
+ * latitude/longitude pair. Blocks missing a coordinate, or carrying a NaN,
+ * infinite, or out-of-range value, are dropped so no pin is rendered for them.
  */
 export function toMapPins(blocks: BlockLike[]): MapPin[] {
   const pins: MapPin[] = [];
   for (const block of blocks) {
-    if (
-      block.latitude == null ||
-      block.longitude == null ||
-      Number.isNaN(block.latitude) ||
-      Number.isNaN(block.longitude)
-    ) {
+    const { latitude, longitude } = block;
+    if (!isValidCoordinate(latitude, longitude)) {
       continue;
     }
+    // `isValidCoordinate` guarantees both are finite, in-range numbers.
     pins.push({
       blockId: block.id,
-      latitude: block.latitude,
-      longitude: block.longitude,
+      latitude: latitude as number,
+      longitude: longitude as number,
       title: block.title,
       category: block.category,
       dayNumber: block.dayNumber,

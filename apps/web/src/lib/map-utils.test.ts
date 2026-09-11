@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   assignDayColors,
+  isValidCoordinate,
   toMapPins,
   groupPinsByDay,
   buildRouteSegments,
@@ -84,6 +85,35 @@ describe('assignDayColors', () => {
   });
 });
 
+describe('isValidCoordinate', () => {
+  it('accepts finite in-range coordinates including the extremes', () => {
+    expect(isValidCoordinate(0, 0)).toBe(true);
+    expect(isValidCoordinate(35.68, 139.76)).toBe(true);
+    expect(isValidCoordinate(-90, -180)).toBe(true);
+    expect(isValidCoordinate(90, 180)).toBe(true);
+  });
+
+  it('rejects null coordinates', () => {
+    expect(isValidCoordinate(null, 10)).toBe(false);
+    expect(isValidCoordinate(10, null)).toBe(false);
+    expect(isValidCoordinate(null, null)).toBe(false);
+  });
+
+  it('rejects NaN and infinite coordinates', () => {
+    expect(isValidCoordinate(NaN, 10)).toBe(false);
+    expect(isValidCoordinate(10, NaN)).toBe(false);
+    expect(isValidCoordinate(Infinity, 10)).toBe(false);
+    expect(isValidCoordinate(10, -Infinity)).toBe(false);
+  });
+
+  it('rejects out-of-range latitudes and longitudes', () => {
+    expect(isValidCoordinate(91, 0)).toBe(false);
+    expect(isValidCoordinate(-91, 0)).toBe(false);
+    expect(isValidCoordinate(0, 181)).toBe(false);
+    expect(isValidCoordinate(0, -181)).toBe(false);
+  });
+});
+
 describe('toMapPins', () => {
   it('keeps only blocks that have both coordinates', () => {
     const blocks: BlockLike[] = [
@@ -95,6 +125,18 @@ describe('toMapPins', () => {
     ];
     const pins = toMapPins(blocks);
     expect(pins.map((p) => p.blockId)).toEqual(['a']);
+  });
+
+  it('drops blocks with out-of-range or infinite coordinates', () => {
+    const blocks: BlockLike[] = [
+      block({ id: 'ok', dayNumber: 1, latitude: 12, longitude: 77 }),
+      block({ id: 'lat-hi', dayNumber: 1, latitude: 999, longitude: 10 }),
+      block({ id: 'lat-lo', dayNumber: 1, latitude: -100, longitude: 10 }),
+      block({ id: 'lng-hi', dayNumber: 1, latitude: 10, longitude: 200 }),
+      block({ id: 'inf', dayNumber: 1, latitude: Infinity, longitude: 10 }),
+    ];
+    const pins = toMapPins(blocks);
+    expect(pins.map((p) => p.blockId)).toEqual(['ok']);
   });
 
   it('maps block fields onto the pin shape', () => {
