@@ -48,6 +48,24 @@ export const geocodeRateLimiter = rateLimit({
 });
 
 /**
+ * Nearby-places (Overpass) proxy rate limiter: 30 requests per minute per IP.
+ *
+ * Tighter than the general API limiter because each miss can cost a slow,
+ * rate-limited Overpass call. Results are cached and searches are user-driven
+ * (a category click), so a real user stays well under this.
+ */
+export const nearbyRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many nearby searches, please slow down',
+  },
+});
+
+/**
  * Socket.io event rate limiter for block mutations.
  * Tracks per-user event counts in a simple in-memory map.
  * Throttle: 30 mutations per minute per user.

@@ -26,8 +26,36 @@ import {
 } from '@/lib/map-utils';
 import { formatTime, timezoneAbbreviation } from '@/lib/format';
 import { useSocket } from '@/hooks/useSocket';
+import { useNearbySearch, type NearbyResult } from '@/hooks/useNearbySearch';
+import { AddActivityModal } from '@/components/itinerary/AddActivityModal';
 import { MapView } from './index';
 import { DayFilter, type DayFilterEntry } from './DayFilter';
+
+/**
+ * Nearby-search category presets shown in the map's category bar. `key` matches
+ * the backend Overpass proxy preset; `activityCategory` is what an added POI
+ * becomes when saved as an itinerary block.
+ */
+const NEARBY_CATEGORIES: {
+  key: string;
+  label: string;
+  emoji: string;
+  activityCategory: ActivityCategory;
+}[] = [
+  { key: 'cafe', label: 'Cafes', emoji: '☕', activityCategory: 'food' },
+  { key: 'restaurant', label: 'Restaurants', emoji: '🍽️', activityCategory: 'food' },
+  { key: 'attraction', label: 'Attractions', emoji: '🎯', activityCategory: 'activity' },
+  { key: 'atm', label: 'ATMs', emoji: '🏧', activityCategory: 'activity' },
+  { key: 'pharmacy', label: 'Pharmacy', emoji: '💊', activityCategory: 'activity' },
+  { key: 'fuel', label: 'Fuel', emoji: '⛽', activityCategory: 'travel' },
+];
+
+/** Radius (m) for the nearby POI search — a walkable neighbourhood around a pin. */
+const NEARBY_RADIUS_M = 800;
+
+function activityCategoryFor(nearbyCategory: string | null): ActivityCategory {
+  return NEARBY_CATEGORIES.find((c) => c.key === nearbyCategory)?.activityCategory ?? 'activity';
+}
 
 interface ApiBlock {
   id: string;
@@ -61,6 +89,19 @@ export function TripMap() {
   const [error, setError] = useState('');
   const [hiddenDays, setHiddenDays] = useState<Set<number>>(new Set());
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  /** Nearby result currently being added to the itinerary (drives the modal). */
+  const [addingNearby, setAddingNearby] = useState<NearbyResult | null>(null);
+
+  const {
+    results: nearbyResults,
+    origin: nearbyOrigin,
+    category: nearbyCategory,
+    loading: nearbyLoading,
+    error: nearbyError,
+    searched: nearbySearched,
+    search: runNearbySearch,
+    clear: clearNearby,
+  } = useNearbySearch(token);
 
   // ─── Data ────────────────────────────────────────────────────────────────
 
@@ -183,7 +224,79 @@ export function TripMap() {
     [visiblePins, selectedBlockId]
   );
 
-  const handlePinClick = useCallback((pin: MapPin) => setSelectedBlockId(pin.blockId), []);
+  const handlePinClick = useCallback(
+    (pin: MapPin) => {
+      setSelectedBlockId((prev) => {
+        // Selecting a different pin invalidates the previous nearby results.
+        if (prev !== pin.blockId) clearNearby();
+        return pin.blockId;
+      });
+    },
+    [clearNearby]
+  );
+
+  // ─── Nearby search ─────────────────────────────────────────────────────────
+
+  /** Day id that owns the selected pin, used as the target for added POIs. */
+  const selectedDayId = useMemo(
+    () =>
+      selectedBlockId
+        ? days.find((day) => day.blocks.some((b) => b.id === selectedBlockId))?.id ?? null
+        : null,
+    [days, selectedBlockId]
+  );
+
+  /** Category bar click: search the chosen category around the selected pin. */
+  const handleCategorySearch = useCallback(
+    (category: string) => {
+      if (!selectedPin) return;
+      runNearbySearch({
+        latitude: selectedPin.latitude,
+        longitude: selectedPin.longitude,
+        category,
+        radius: NEARBY_RADIUS_M,
+      });
+    },
+    [selectedPin, runNearbySearch]
+  );
+
+  /** Pin popup "What's nearby?": select the pin and search around it. */
+  const handleWhatsNearby = useCallback(
+    (pin: MapPin) => {
+      setSelectedBlockId(pin.blockId);
+      runNearbySearch({
+        latitude: pin.latitude,
+        longitude: pin.longitude,
+        // Reuse the active category so the button feels consistent; default to cafes.
+        category: nearbyCategory ?? NEARBY_CATEGORIES[0].key,
+        radius: NEARBY_RADIUS_M,
+      });
+    },
+    [runNearbySearch, nearbyCategory]
+  );
+
+  /** Emits a socket block:create, reusing the same flow as the itinerary board. */
+  const createBlock = useCallback(
+    (input: {
+      dayId: string;
+      title: string;
+      category: string;
+      latitude?: number;
+      longitude?: number;
+      locationName?: string;
+    }): Promise<{ ok: boolean; error?: string }> =>
+      new Promise((resolve) => {
+        if (!socket || !socket.connected) {
+          resolve({ ok: false, error: 'Not connected' });
+          return;
+        }
+        socket.emit('block:create', input, (res: { ok?: boolean; error?: string; message?: string }) => {
+          if (res?.ok) resolve({ ok: true });
+          else resolve({ ok: false, error: res?.message || res?.error || 'Failed to add activity' });
+        });
+      }),
+    [socket]
+  );
 
   /** Leg leaving the selected pin, for the "next stop" distance readout. */
   const selectedLeg = useMemo(
@@ -254,7 +367,10 @@ export function TripMap() {
               <h3 className="text-sm font-semibold text-foreground">{selectedPin.title}</h3>
               <button
                 type="button"
-                onClick={() => setSelectedBlockId(null)}
+                onClick={() => {
+                  setSelectedBlockId(null);
+                  clearNearby();
+                }}
                 className="text-xs font-medium text-muted-foreground hover:text-foreground"
               >
                 Clear
@@ -272,6 +388,50 @@ export function TripMap() {
                 {selectedLeg.to.title}
               </p>
             )}
+
+            {/* Nearby-places category bar — searches around this pin. */}
+            <div className="mt-3 border-t border-primary/20 pt-3">
+              <p className="mb-2 text-xs font-semibold text-foreground">Explore nearby</p>
+              <div className="flex flex-wrap gap-1.5">
+                {NEARBY_CATEGORIES.map((cat) => {
+                  const active = nearbyCategory === cat.key;
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => handleCategorySearch(cat.key)}
+                      disabled={nearbyLoading}
+                      aria-pressed={active}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
+                        active
+                          ? 'bg-primary text-white'
+                          : 'bg-card text-foreground hover:bg-muted border border-border'
+                      }`}
+                    >
+                      <span aria-hidden="true">{cat.emoji}</span>
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {nearbyLoading && (
+                <p className="mt-2 text-xs text-muted-foreground">Finding nearby places…</p>
+              )}
+              {nearbyError && (
+                <p className="mt-2 text-xs text-danger" role="alert">
+                  {nearbyError}
+                </p>
+              )}
+              {!nearbyLoading && !nearbyError && nearbySearched && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {nearbyResults.length > 0
+                    ? `${nearbyResults.length} ${nearbyCategory ?? ''} place${
+                        nearbyResults.length === 1 ? '' : 's'
+                      } within ${NEARBY_RADIUS_M} m — tap a pin to add it.`
+                    : `No ${nearbyCategory ?? ''} places found within ${NEARBY_RADIUS_M} m.`}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -315,6 +475,11 @@ export function TripMap() {
           selectedBlockId={selectedBlockId}
           itineraryHref={itineraryHref}
           tzAbbrev={tzAbbrev}
+          nearbyResults={nearbyResults}
+          nearbyOrigin={nearbyOrigin}
+          nearbyLoading={nearbyLoading}
+          onWhatsNearby={handleWhatsNearby}
+          onAddNearby={setAddingNearby}
           autoFit
         />
 
@@ -327,6 +492,31 @@ export function TripMap() {
           </div>
         )}
       </div>
+
+      {/* Add-a-nearby-POI flow: prefilled AddActivityModal, reusing socket block:create. */}
+      {addingNearby && token && (selectedDayId ?? days[0]?.id) && (
+        <AddActivityModal
+          mode="create"
+          dayId={(selectedDayId ?? days[0]!.id) as string}
+          tripId={tripId}
+          token={token}
+          initial={{
+            title: addingNearby.name,
+            category: activityCategoryFor(addingNearby.category),
+            locationName: addingNearby.name,
+            latitude: addingNearby.latitude,
+            longitude: addingNearby.longitude,
+          }}
+          createBlock={createBlock}
+          onClose={() => setAddingNearby(null)}
+          onCreated={() => {
+            setAddingNearby(null);
+            // The server acks the sender but broadcasts only to others, so
+            // refetch locally to show the new pin immediately.
+            fetchDays();
+          }}
+        />
+      )}
     </div>
   );
 }

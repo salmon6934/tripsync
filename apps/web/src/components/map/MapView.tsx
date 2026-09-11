@@ -15,7 +15,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, Tooltip, useMap } fro
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import 'leaflet/dist/leaflet.css';
-import { Bed, MapPinned, Navigation2, Utensils, type LucideIcon } from 'lucide-react';
+import { Bed, Compass, MapPinned, Navigation2, Plus, Utensils, type LucideIcon } from 'lucide-react';
 import type { ActivityCategory } from '@tripsync/shared';
 import type { MapPin, RouteSegment } from '@/lib/map-utils';
 import {
@@ -26,7 +26,9 @@ import {
   groupPinsByDay,
 } from '@/lib/map-utils';
 import { formatTime } from '@/lib/format';
-import { createDayIcon } from './dayMarkerIcon';
+import { haversineDistanceMeters } from '@/lib/map-utils';
+import type { NearbyResult, NearbyOrigin } from '@/hooks/useNearbySearch';
+import { createDayIcon, createNearbyIcon } from './dayMarkerIcon';
 
 export type { MapPin, RouteSegment } from '@/lib/map-utils';
 
@@ -55,6 +57,19 @@ export interface MapViewProps {
   autoFit?: boolean;
   /** Timezone abbreviation appended to popup times, e.g. "JST". */
   tzAbbrev?: string | null;
+  /**
+   * Temporary "nearby places" results, rendered as visually-distinct pins.
+   * These are exploratory and never persisted until added to the itinerary.
+   */
+  nearbyResults?: NearbyResult[];
+  /** Point the nearby results were searched around, for the distance readout. */
+  nearbyOrigin?: NearbyOrigin | null;
+  /** Shows a spinner overlay while a nearby search is in flight. */
+  nearbyLoading?: boolean;
+  /** Called from an itinerary pin popup to search POIs around that pin. */
+  onWhatsNearby?: (pin: MapPin) => void;
+  /** Called from a nearby-result popup to add it to the itinerary. */
+  onAddNearby?: (result: NearbyResult) => void;
   className?: string;
 }
 
@@ -163,6 +178,11 @@ export function MapView({
   zoom = DEFAULT_ZOOM,
   autoFit = true,
   tzAbbrev,
+  nearbyResults = [],
+  nearbyOrigin = null,
+  nearbyLoading = false,
+  onWhatsNearby,
+  onAddNearby,
   className,
 }: MapViewProps) {
   const resolvedCenter = center ?? computePinsCenter(pins) ?? DEFAULT_CENTER;
@@ -261,19 +281,81 @@ export function MapView({
                   Day {pin.dayNumber} · {formatTimeSlot(pin, tzAbbrev)}
                 </p>
                 <p className="mt-0.5 text-xs capitalize text-muted-foreground">{pin.category}</p>
-                {itineraryHref && (
-                  <Link
-                    href={itineraryHref(pin.blockId)}
-                    className="mt-2 inline-block text-xs font-medium text-primary hover:text-primary-tint-foreground"
+                <div className="mt-2 flex flex-col gap-1.5">
+                  {itineraryHref && (
+                    <Link
+                      href={itineraryHref(pin.blockId)}
+                      className="text-xs font-medium text-primary hover:text-primary-tint-foreground"
+                    >
+                      Go to Itinerary →
+                    </Link>
+                  )}
+                  {onWhatsNearby && (
+                    <button
+                      type="button"
+                      onClick={() => onWhatsNearby(pin)}
+                      className="inline-flex w-fit items-center gap-1 rounded-full bg-primary-tint px-2.5 py-1 text-xs font-medium text-primary-tint-foreground hover:bg-primary-tint/80"
+                    >
+                      <Compass className="h-3.5 w-3.5" aria-hidden="true" />
+                      What&apos;s nearby?
+                    </button>
+                  )}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+
+      {/* Temporary nearby-POI pins, styled distinctly from itinerary pins. */}
+      {nearbyResults.map((result) => {
+        const distance =
+          nearbyOrigin != null
+            ? haversineDistanceMeters(
+                { latitude: nearbyOrigin.latitude, longitude: nearbyOrigin.longitude },
+                { latitude: result.latitude, longitude: result.longitude }
+              )
+            : null;
+        return (
+          <Marker
+            key={`nearby-${result.category}-${result.latitude},${result.longitude}-${result.name}`}
+            position={[result.latitude, result.longitude]}
+            icon={createNearbyIcon()}
+          >
+            <Popup>
+              <div className="min-w-[180px] text-sm">
+                <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                  <MapPinned className="h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
+                  {result.name}
+                </p>
+                <p className="mt-1 text-xs capitalize text-muted-foreground">
+                  {result.category}
+                  {distance != null ? ` · ${formatDistance(distance)} away` : ''}
+                </p>
+                {onAddNearby && (
+                  <button
+                    type="button"
+                    onClick={() => onAddNearby(result)}
+                    className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-primary-hover"
                   >
-                    Go to Itinerary →
-                  </Link>
+                    <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                    Add to itinerary
+                  </button>
                 )}
               </div>
             </Popup>
           </Marker>
         );
       })}
+
+      {nearbyLoading && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[600] -translate-x-1/2 rounded-full bg-card/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-md">
+          <span className="inline-flex items-center gap-2">
+            <span className="block h-3 w-3 animate-spin rounded-full border-2 border-primary-tint border-t-primary" />
+            Finding nearby places…
+          </span>
+        </div>
+      )}
     </MapContainer>
   );
 }

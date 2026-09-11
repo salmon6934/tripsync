@@ -69,6 +69,45 @@ export function createDayIcon(color: string, options: DayMarkerOptions = {}): L.
   return icon;
 }
 
+/** Nearby-POI marker footprint in px. Smaller circle, visually distinct from itinerary teardrops. */
+const NEARBY_ICON_SIZE = 22;
+
+let nearbyIcon: L.DivIcon | null = null;
+
+/**
+ * Returns the shared marker icon for temporary "nearby places" results.
+ *
+ * Deliberately styled unlike the day-colored itinerary teardrops: a small
+ * dashed circle in a neutral violet so users can tell exploratory POIs apart
+ * from activities already on their plan at a glance. A single cached instance
+ * is reused for every nearby pin.
+ */
+export function createNearbyIcon(): L.DivIcon {
+  if (nearbyIcon) return nearbyIcon;
+
+  const fill = '#7c5cbf'; // muted violet — not in the day palette
+  const size = NEARBY_ICON_SIZE;
+  const r = size / 2 - 2;
+  const html = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}"
+        fill="${fill}" fill-opacity="0.9" stroke="#ffffff" stroke-width="2"
+        stroke-dasharray="3 2" />
+      <circle cx="${size / 2}" cy="${size / 2}" r="2.5" fill="#ffffff" />
+    </svg>
+  `;
+
+  nearbyIcon = L.divIcon({
+    html,
+    className: 'trip-map-nearby-pin',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+    tooltipAnchor: [size / 2, -size / 2],
+  });
+  return nearbyIcon;
+}
+
 /** Escapes the few characters that could break out of SVG text content. */
 function escapeHtml(value: string): string {
   return value
