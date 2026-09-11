@@ -1,4 +1,4 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, desc, lt, or, type SQL } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { expenses, expenseSplits, settlements, users } from '../db/schema.js';
 import { getMembers } from './trip.service.js';
@@ -616,14 +616,50 @@ export async function linkToBlock(expenseId: string, blockId: string) {
 // ─── List Expenses ───────────────────────────────────────────────────────────
 
 /**
- * Lists all non-deleted expenses for a trip, each with its splits joined in.
- * Soft-deleted expenses are excluded from the results.
+ * Resolves an expense cursor (id of the last item on the previous page) into
+ * the keyset condition for the next page. Expenses are ordered
+ * (createdAt DESC, id DESC), so "after" the cursor means strictly older rows,
+ * with the id tie-break keeping pagination stable when timestamps collide.
+ * Returns null when the cursor id can't be found (caller loads the first page).
  */
-export async function getExpenses(tripId: string) {
-  const allExpenses = await db
+async function resolveExpenseCursor(cursor: string): Promise<SQL | null> {
+  const [row] = await db
+    .select({ createdAt: expenses.createdAt })
+    .from(expenses)
+    .where(eq(expenses.id, cursor));
+
+  if (!row) return null;
+
+  return or(
+    lt(expenses.createdAt, row.createdAt),
+    and(eq(expenses.createdAt, row.createdAt), lt(expenses.id, cursor))
+  ) as SQL;
+}
+
+/**
+ * Lists non-deleted expenses for a trip (newest first), each with its splits
+ * joined in. Soft-deleted expenses are excluded.
+ *
+ * Pagination:
+ *   - When `limit` is omitted, every expense is returned (legacy full-list
+ *     behavior — balance/summary aggregations rely on this).
+ *   - When `limit` is set, at most `limit` rows are returned. Pass `cursor` =
+ *     the id of the last item you already have to fetch the next older page.
+ */
+export async function getExpenses(tripId: string, limit?: number, cursor?: string | null) {
+  const cursorCondition = cursor ? await resolveExpenseCursor(cursor) : null;
+
+  const whereCondition = cursorCondition
+    ? and(eq(expenses.tripId, tripId), isNull(expenses.deletedAt), cursorCondition)
+    : and(eq(expenses.tripId, tripId), isNull(expenses.deletedAt));
+
+  const query = db
     .select()
     .from(expenses)
-    .where(and(eq(expenses.tripId, tripId), isNull(expenses.deletedAt)));
+    .where(whereCondition)
+    .orderBy(desc(expenses.createdAt), desc(expenses.id));
+
+  const allExpenses = limit != null ? await query.limit(limit) : await query;
 
   const expensesWithSplits = await Promise.all(
     allExpenses.map(async (expense) => {

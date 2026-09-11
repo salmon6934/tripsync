@@ -348,36 +348,44 @@ export function ItineraryBoard() {
     [deleteBlock]
   );
 
-  function handleDeleteBlock(blockId: string) {
-    // Soft delete: hide immediately, commit after the undo window
-    setHiddenBlockIds((prev) => new Set(prev).add(blockId));
-    let undone = false;
-    let settled = false;
-    const restore = () => {
-      undone = true;
-      setHiddenBlockIds((prev) => {
-        const next = new Set(prev);
-        next.delete(blockId);
-        return next;
+  // Stable identity (useCallback) so the memoized DayColumn/SortableBlock tree
+  // doesn't re-render just because this handler was recreated.
+  const handleDeleteBlock = useCallback(
+    (blockId: string) => {
+      // Soft delete: hide immediately, commit after the undo window
+      setHiddenBlockIds((prev) => new Set(prev).add(blockId));
+      let undone = false;
+      let settled = false;
+      const restore = () => {
+        undone = true;
+        setHiddenBlockIds((prev) => {
+          const next = new Set(prev);
+          next.delete(blockId);
+          return next;
+        });
+      };
+      const commit = () => {
+        if (settled || undone) return;
+        settled = true;
+        finalizeDelete(blockId);
+      };
+      toast('Activity deleted', {
+        duration: 5000,
+        action: { label: 'Undo', onClick: restore },
+        onAutoClose: commit,
+        onDismiss: commit,
       });
-    };
-    const commit = () => {
-      if (settled || undone) return;
-      settled = true;
-      finalizeDelete(blockId);
-    };
-    toast('Activity deleted', {
-      duration: 5000,
-      action: { label: 'Undo', onClick: restore },
-      onAutoClose: commit,
-      onDismiss: commit,
-    });
-  }
+    },
+    [finalizeDelete]
+  );
 
-  function openEdit(block: BlockData) {
-    setEditState({ block, baseUpdatedAt: block.updatedAt });
-    setMyEditing(block.id);
-  }
+  const openEdit = useCallback(
+    (block: BlockData) => {
+      setEditState({ block, baseUpdatedAt: block.updatedAt });
+      setMyEditing(block.id);
+    },
+    [setMyEditing]
+  );
 
   function closeEdit() {
     setEditState(null);
@@ -455,14 +463,22 @@ export function ItineraryBoard() {
 
   // ─── Selection / bulk actions ────────────────────────────────────────────
 
-  function toggleSelect(blockId: string) {
+  const toggleSelect = useCallback((blockId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(blockId)) next.delete(blockId);
       else next.add(blockId);
       return next;
     });
-  }
+  }, []);
+
+  // Stable handlers for the memoized columns (avoid inline arrows in JSX).
+  const handleAddActivity = useCallback((dayId: string) => setAddModalDayId(dayId), []);
+  const handleToggleExpand = useCallback(
+    (id: string) => setExpandedBlockId((prev) => (prev === id ? null : id)),
+    []
+  );
+  const handleDuplicateBlock = useCallback((b: BlockData) => setDuplicateSource(b), []);
 
   function exitSelectMode() {
     setSelectMode(false);
@@ -716,16 +732,16 @@ export function ItineraryBoard() {
               dayNumber={day.dayNumber}
               date={day.date}
               blocks={day.blocks}
-              onAddActivity={(dayId) => setAddModalDayId(dayId)}
+              onAddActivity={handleAddActivity}
               canEdit={canEdit}
               members={members}
               tzAbbrev={tzAbbrev}
               lockedByBlock={lockedByBlock}
               expandedBlockId={expandedBlockId}
-              onToggleExpand={(id) => setExpandedBlockId((prev) => (prev === id ? null : id))}
+              onToggleExpand={handleToggleExpand}
               onEditBlock={openEdit}
               onDeleteBlock={handleDeleteBlock}
-              onDuplicateBlock={(b) => setDuplicateSource(b)}
+              onDuplicateBlock={handleDuplicateBlock}
               isMatch={isMatch}
               selectMode={selectMode}
               selectedIds={selectedIds}

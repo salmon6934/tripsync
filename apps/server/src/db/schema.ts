@@ -8,6 +8,7 @@ import {
   real,
   boolean,
   jsonb,
+  index,
 } from 'drizzle-orm/pg-core';
 
 // ─── Users ───────────────────────────────────────────────────────────────────
@@ -100,7 +101,15 @@ export const activityBlocks = pgTable('activity_blocks', {
   lastEditedBy: uuid('last_edited_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  // Covers the primary read path: loading a trip's blocks grouped by day and
+  // ordered by position (getDaysWithBlocks / itinerary board).
+  index('activity_blocks_trip_day_position_idx').on(
+    table.tripId,
+    table.dayId,
+    table.position
+  ),
+]);
 
 // ─── Votes ───────────────────────────────────────────────────────────────────
 
@@ -172,7 +181,10 @@ export const expenses = pgTable('expenses', {
   // Soft delete: retained for history, excluded from totals/balances.
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  // Every expense list / balance aggregation filters by trip_id first.
+  index('expenses_trip_id_idx').on(table.tripId),
+]);
 
 // ─── Expense Splits ──────────────────────────────────────────────────────────
 
@@ -245,4 +257,8 @@ export const activityLog = pgTable('activity_log', {
   entityId: uuid('entity_id').notNull(),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => [
+  // The activity feed reads by trip_id ordered by created_at DESC, which this
+  // composite index serves directly (also backs cursor-based pagination).
+  index('activity_log_trip_created_idx').on(table.tripId, table.createdAt),
+]);

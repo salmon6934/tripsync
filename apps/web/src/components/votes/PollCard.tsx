@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 
 export interface PollOption {
@@ -39,7 +40,7 @@ interface PollCardProps {
   canDelete: boolean;
 }
 
-export function PollCard({
+function PollCardComponent({
   poll,
   tallies,
   currentUserId,
@@ -171,3 +172,7 @@ export function PollCard({
     </div>
   );
 }
+
+// Memoized: on a votes page with several polls, a live tally update to one poll
+// shouldn't re-render the others.
+export const PollCard = memo(PollCardComponent);

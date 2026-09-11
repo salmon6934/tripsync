@@ -86,8 +86,14 @@ tripExpenseRoutes.post(
 );
 
 /**
- * GET /api/trips/:id/expenses
- * List all expenses (with splits) for a trip. Member role required.
+ * GET /api/trips/:id/expenses?limit=20&cursor=<lastId>
+ * List expenses (with splits) for a trip, newest first. Member role required.
+ *
+ * Uses cursor-based (keyset) pagination: pass `cursor` = the id of the last
+ * expense you already have to fetch the next older page. `nextCursor` in the
+ * response is the last expense's id (or null when the page wasn't full). When
+ * neither `limit` nor `cursor` is supplied the full list is returned, so older
+ * callers that expect every expense keep working.
  */
 tripExpenseRoutes.get(
   '/',
@@ -96,8 +102,20 @@ tripExpenseRoutes.get(
     try {
       const tripId = req.params.id as string;
 
-      const expenses = await getExpenses(tripId);
-      res.status(200).json({ expenses });
+      const hasPagination =
+        req.query.limit !== undefined || req.query.cursor !== undefined;
+      const limit = hasPagination
+        ? Math.min(parseInt(req.query.limit as string) || 20, 100)
+        : undefined;
+      const cursor = (req.query.cursor as string) || null;
+
+      const expenses = await getExpenses(tripId, limit, cursor);
+      const nextCursor =
+        limit != null && expenses.length === limit
+          ? expenses[expenses.length - 1].id
+          : null;
+
+      res.status(200).json({ expenses, nextCursor });
     } catch (error) {
       console.error('List expenses error:', error);
       res.status(500).json({

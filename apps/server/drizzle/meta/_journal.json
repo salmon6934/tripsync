@@ -57,6 +57,13 @@
       "when": 1788705644430,
       "tag": "0007_add_avatar_id",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789134415709,
+      "tag": "0008_nifty_catseye",
+      "breakpoints": true
     }
   ]
 }

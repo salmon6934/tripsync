@@ -40,7 +40,10 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const offsetRef = useRef(0);
+  // Cursor-based (keyset) pagination: holds the id of the oldest loaded entry,
+  // which the next "load more" fetches strictly older rows after. Stable under
+  // real-time inserts (new entries prepend and never shift the cursor).
+  const cursorRef = useRef<string | null>(null);
 
   const lastSeenKey = `activity_feed_last_seen:${tripId}`;
 
@@ -74,20 +77,23 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
     setUnreadCount(0);
   }, [lastSeenKey]);
 
-  // Fetch activity feed from API
+  // Fetch a page of the activity feed. `reset=true` loads the newest page
+  // (no cursor); otherwise it continues from the current cursor (older rows).
   const fetchActivities = useCallback(
-    async (offset = 0) => {
+    async (reset = false) => {
       if (!token || !tripId) return;
+      const cursor = reset ? null : cursorRef.current;
       setLoading(true);
       try {
-        const res = await fetch(
-          `${API_URL}/api/trips/${tripId}/activity?limit=${PAGE_SIZE}&offset=${offset}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
+        if (cursor) qs.set('cursor', cursor);
+        const res = await fetch(`${API_URL}/api/trips/${tripId}/activity?${qs.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (res.ok) {
           const data = await res.json();
           const fetched: ActivityEntry[] = data.activities || [];
-          if (offset === 0) {
+          if (reset) {
             setActivities(fetched);
             computeUnread(fetched);
           } else {
@@ -97,8 +103,12 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
               return merged;
             });
           }
-          setHasMore(fetched.length === PAGE_SIZE);
-          offsetRef.current = offset + fetched.length;
+          // Prefer the server-provided nextCursor; fall back to the last id.
+          const nextCursor =
+            data.nextCursor ??
+            (fetched.length === PAGE_SIZE ? fetched[fetched.length - 1]?.id ?? null : null);
+          cursorRef.current = nextCursor;
+          setHasMore(nextCursor !== null);
         }
       } catch {
         // Silently fail — activity feed is non-critical
@@ -109,15 +119,15 @@ export function useActivityFeed({ tripId, token, socket, currentUserId }: UseAct
     [token, tripId, computeUnread]
   );
 
-  // Load more (pagination)
+  // Load more (older entries via the cursor)
   const loadMore = useCallback(() => {
-    fetchActivities(offsetRef.current);
+    fetchActivities(false);
   }, [fetchActivities]);
 
-  // Initial fetch
+  // Initial fetch (newest page)
   useEffect(() => {
-    offsetRef.current = 0;
-    fetchActivities(0);
+    cursorRef.current = null;
+    fetchActivities(true);
   }, [fetchActivities]);
 
   // Listen to the server-authoritative `activity:new` event for real-time

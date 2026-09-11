@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, lt, or, type SQL } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { activityLog, users } from '../db/schema.js';
 import { getIoInstance } from '../socket/io-instance.js';
@@ -182,9 +182,55 @@ export function formatDescription(entry: ActivityLogEntry, userName: string): st
 }
 
 /**
- * Gets recent activity feed entries for a trip with user names and formatted descriptions.
+ * Resolves a cursor (the id of the last item on the previous page) into the
+ * keyset condition used to fetch the next page. The feed is ordered by
+ * (createdAt DESC, id DESC), so "after" a cursor means strictly older rows:
+ * either an earlier createdAt, or the same createdAt with a smaller id (the
+ * id tie-break keeps pagination stable when timestamps collide).
+ *
+ * Returns null when the cursor id can't be found, in which case the caller
+ * falls back to the first page.
  */
-export async function getActivityFeed(tripId: string, limit = 20, offset = 0) {
+async function resolveActivityCursor(cursor: string): Promise<SQL | null> {
+  const [row] = await db
+    .select({ createdAt: activityLog.createdAt })
+    .from(activityLog)
+    .where(eq(activityLog.id, cursor));
+
+  if (!row) return null;
+
+  return or(
+    lt(activityLog.createdAt, row.createdAt),
+    and(eq(activityLog.createdAt, row.createdAt), lt(activityLog.id, cursor))
+  ) as SQL;
+}
+
+/**
+ * Gets recent activity feed entries for a trip with user names and formatted
+ * descriptions, ordered newest-first.
+ *
+ * Supports two pagination styles:
+ *   - Cursor (preferred): pass `cursor` = the id of the last item you already
+ *     have; returns the next `limit` older entries. Stable under inserts.
+ *   - Offset (legacy): pass `offset` to skip N rows. Kept for backward
+ *     compatibility; ignored when a valid `cursor` is supplied.
+ *
+ * Clients derive the next cursor from the id of the last returned entry, and
+ * treat `entries.length < limit` as "no more pages".
+ */
+export async function getActivityFeed(
+  tripId: string,
+  limit = 20,
+  offset = 0,
+  cursor?: string | null
+) {
+  // Cursor pagination takes precedence over offset when both are present.
+  const cursorCondition = cursor ? await resolveActivityCursor(cursor) : null;
+
+  const whereCondition = cursorCondition
+    ? and(eq(activityLog.tripId, tripId), cursorCondition)
+    : eq(activityLog.tripId, tripId);
+
   const entries = await db
     .select({
       id: activityLog.id,
@@ -200,10 +246,11 @@ export async function getActivityFeed(tripId: string, limit = 20, offset = 0) {
     })
     .from(activityLog)
     .innerJoin(users, eq(activityLog.userId, users.id))
-    .where(eq(activityLog.tripId, tripId))
-    .orderBy(desc(activityLog.createdAt))
+    .where(whereCondition)
+    .orderBy(desc(activityLog.createdAt), desc(activityLog.id))
+    // Offset is skipped in cursor mode (keyset pagination handles the position).
     .limit(limit)
-    .offset(offset);
+    .offset(cursorCondition ? 0 : offset);
 
   return entries.map((entry) => {
     const logEntry: ActivityLogEntry = {

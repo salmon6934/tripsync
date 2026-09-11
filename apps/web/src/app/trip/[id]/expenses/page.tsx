@@ -33,6 +33,8 @@ export default function TripExpensesPage() {
     summary,
     suggested,
     loading,
+    hasMore,
+    loadMore,
     createExpense,
     updateExpense,
     deleteExpense,
@@ -111,9 +113,14 @@ export default function TripExpensesPage() {
   );
 
   // Trip currency: prefer the most recent expense's currency, default INR.
-  const tripCurrency = expenses[0]?.currency || 'INR';
+  const tripCurrency = useMemo(() => expenses[0]?.currency || 'INR', [expenses]);
 
-  const myNet = summary?.memberBalances.find((b) => b.userId === currentUserId)?.balanceMinor ?? 0;
+  // The current user's net balance, derived from the summary. Memoized so it's
+  // only recomputed when the balances (or the viewer) actually change.
+  const myNet = useMemo(
+    () => summary?.memberBalances.find((b) => b.userId === currentUserId)?.balanceMinor ?? 0,
+    [summary, currentUserId]
+  );
 
   const nameFor = (userId: string) =>
     userId === currentUserId ? 'You' : memberNames.get(userId) ?? 'Someone';
@@ -253,6 +260,17 @@ export default function TripExpensesPage() {
                   onDelete={() => deleteExpense(expense)}
                 />
               ))}
+
+              {hasMore && (
+                <div className="pt-2 text-center">
+                  <button
+                    onClick={loadMore}
+                    className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted"
+                  >
+                    Load more
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

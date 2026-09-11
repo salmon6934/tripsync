@@ -551,17 +551,27 @@ router.use('/:id/balances', tripBalanceRoutes);
 // ─── Activity Feed ───────────────────────────────────────────────────────────
 
 /**
- * GET /api/trips/:id/activity?limit=20&offset=0
+ * GET /api/trips/:id/activity?limit=20&cursor=<lastId>
  * Get the activity feed for a trip. User must be a member.
+ *
+ * Prefers cursor-based (keyset) pagination: pass `cursor` = the id of the last
+ * entry you already have to fetch the next older page. `offset` is still
+ * accepted for backward compatibility but is ignored when `cursor` is present.
+ * The response includes `nextCursor` (the last entry's id, or null when the
+ * page wasn't full) so clients don't have to reach into the list themselves.
  */
 router.get('/:id/activity', requireMember() as RequestHandler, async (req: Request, res: Response) => {
   try {
     const tripId = req.params.id as string;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
     const offset = parseInt(req.query.offset as string) || 0;
+    const cursor = (req.query.cursor as string) || null;
 
-    const activities = await getActivityFeed(tripId, limit, offset);
-    res.status(200).json({ activities });
+    const activities = await getActivityFeed(tripId, limit, offset, cursor);
+    const nextCursor =
+      activities.length === limit ? activities[activities.length - 1].id : null;
+
+    res.status(200).json({ activities, nextCursor });
   } catch (error) {
     console.error('Get activity feed error:', error);
     res.status(500).json({

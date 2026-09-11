@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableBlock, BlockData, MemberInfo } from './SortableBlock';
@@ -26,7 +27,7 @@ interface DayColumnProps {
   onToggleSelect: (blockId: string) => void;
 }
 
-export function DayColumn({
+function DayColumnComponent({
   dayId,
   dayNumber,
   date,
@@ -113,3 +114,7 @@ export function DayColumn({
     </div>
   );
 }
+
+// Memoized: a column only re-renders when its own props change, so editing one
+// day's blocks doesn't re-render every other day column on the board.
+export const DayColumn = memo(DayColumnComponent);

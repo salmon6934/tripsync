@@ -1,9 +1,22 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import type { BlockData } from '../components/itinerary/SortableBlock';
 import { useOptimisticUpdate } from './useOptimisticUpdate';
+
+/**
+ * Debounce window (ms) for coalescing rapid successive edits to the same block
+ * into a single socket emit. The optimistic UI still updates instantly on every
+ * keystroke/drag; only the network write is batched.
+ */
+const BLOCK_UPDATE_DEBOUNCE_MS = 100;
+
+interface PendingBlockUpdate {
+  updates: Record<string, unknown>;
+  timer: ReturnType<typeof setTimeout>;
+  resolvers: Array<(result: { ok: boolean; error?: string }) => void>;
+}
 
 interface DayData {
   id: string;
@@ -26,6 +39,9 @@ interface UseTripSyncOptions {
  */
 export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
   const { applyOptimistic } = useOptimisticUpdate(setDays);
+
+  // Per-block debounce state for batching rapid successive `block:update` emits.
+  const pendingUpdates = useRef<Map<string, PendingBlockUpdate>>(new Map());
 
   // Listen for server broadcast events
   useEffect(() => {
@@ -170,22 +186,65 @@ export function useTripSync({ socket, days, setDays }: UseTripSyncOptions) {
     [socket, applyOptimistic, setDays],
   );
 
+  /**
+   * Optimistically applies a block update immediately (instant UI, Req 4.6) and
+   * debounces the network emit: rapid successive updates to the same block are
+   * coalesced within a 100ms window and sent as a single `block:update`. All
+   * callers waiting on that window resolve together with the server's result.
+   */
   const updateBlock = useCallback(
-    async (
+    (
       blockId: string,
       updates: Partial<Omit<BlockData, 'id' | 'dayId' | 'position'>>,
     ): Promise<{ ok: boolean; error?: string }> => {
-      return applyOptimistic(
-        (prev) =>
-          prev.map((day) => ({
-            ...day,
-            blocks: day.blocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b)),
-          })),
-        () => emitWithAck('block:update', { blockId, ...updates }),
+      // Apply the optimistic change right away so the UI never waits on the
+      // debounce window.
+      setDays((prev) =>
+        prev.map((day) => ({
+          ...day,
+          blocks: day.blocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b)),
+        })),
       );
+
+      return new Promise((resolve) => {
+        const existing = pendingUpdates.current.get(blockId);
+        // Merge onto any updates already queued for this block in the window.
+        const mergedUpdates = { ...(existing?.updates ?? {}), ...updates };
+        const resolvers = existing?.resolvers ?? [];
+        resolvers.push(resolve);
+
+        if (existing) clearTimeout(existing.timer);
+
+        const timer = setTimeout(async () => {
+          pendingUpdates.current.delete(blockId);
+          const response = await emitWithAck('block:update', { blockId, ...mergedUpdates });
+          const result = response.ok
+            ? { ok: true }
+            : { ok: false, error: response.error };
+          resolvers.forEach((r) => r(result));
+        }, BLOCK_UPDATE_DEBOUNCE_MS);
+
+        pendingUpdates.current.set(blockId, { updates: mergedUpdates, timer, resolvers });
+      });
     },
-    [socket, applyOptimistic],
+    [socket, setDays],
   );
+
+  // Flush any still-pending debounced updates when the hook unmounts so a batch
+  // that hasn't fired yet isn't silently dropped.
+  useEffect(() => {
+    const pending = pendingUpdates.current;
+    return () => {
+      for (const [blockId, entry] of pending.entries()) {
+        clearTimeout(entry.timer);
+        if (socket && socket.connected) {
+          socket.emit('block:update', { blockId, ...entry.updates });
+        }
+        entry.resolvers.forEach((r) => r({ ok: true }));
+      }
+      pending.clear();
+    };
+  }, [socket]);
 
   const moveBlock = useCallback(
     async (

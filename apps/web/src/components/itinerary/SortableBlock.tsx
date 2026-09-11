@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ActivityCategory } from '@tripsync/shared';
@@ -81,7 +82,7 @@ function MiniAvatar({ userId, name, avatarId }: { userId: string; name: string; 
   );
 }
 
-export function SortableBlock({
+function SortableBlockComponent({
   block,
   canEdit,
   members,
@@ -298,3 +299,9 @@ export function SortableBlock({
     </div>
   );
 }
+
+// Memoized: with many blocks on the board, this keeps a single block's edit or
+// drag from re-rendering every other card. Props are stable (handlers are
+// memoized in ItineraryBoard, `members`/`block` change by reference only when
+// their data actually changes).
+export const SortableBlock = memo(SortableBlockComponent);

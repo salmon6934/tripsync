@@ -3,7 +3,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
   createdAt: Date;
 }
 
@@ -85,7 +85,7 @@ export interface MoveBlockInput {
 export interface PresenceInfo {
   userId: string;
   userName: string;
-  avatarUrl: string | null;
+  avatarId: number | null;
   editingBlockId: string | null;
   lastHeartbeat: Date;
 }
@@ -220,7 +220,7 @@ export interface SocketEventMap {
   'vote:resolved': { vote: Vote };
 
   // Presence events
-  'presence:join': { userId: string; userName: string; avatarUrl: string | null };
+  'presence:join': { userId: string; userName: string; avatarId: number | null };
   'presence:leave': { userId: string };
   'presence:editing': { userId: string; blockId: string | null };
 

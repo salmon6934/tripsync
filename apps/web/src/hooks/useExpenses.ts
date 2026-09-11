@@ -86,6 +86,8 @@ interface UseExpensesReturn {
   suggested: SuggestedTransaction[];
   payments: Settlement[];
   loading: boolean;
+  hasMore: boolean;
+  loadMore: () => void;
   createExpense: (input: ExpensePayload) => Promise<boolean>;
   updateExpense: (id: string, input: ExpensePayload) => Promise<boolean>;
   deleteExpense: (expense: ExpenseWithSplits) => void;
@@ -98,6 +100,8 @@ interface UseExpensesReturn {
 }
 
 const UNDO_WINDOW_MS = 5000;
+/** Page size for cursor-based (keyset) expense pagination. */
+const PAGE_SIZE = 20;
 
 /**
  * Fetches a trip's expenses, balances and settlements, keeps them in sync with
@@ -115,22 +119,45 @@ export function useExpenses({
   const [suggested, setSuggested] = useState<SuggestedTransaction[]>([]);
   const [payments, setPayments] = useState<Settlement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
   // Pending soft-delete timers keyed by expense id, for the undo window.
   const pendingDeletes = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Cursor-based pagination: id of the oldest loaded expense. New expenses
+  // prepend (never shifting the cursor), so keyset paging stays stable.
+  const cursorRef = useRef<string | null>(null);
 
-  const fetchExpenses = useCallback(async () => {
-    if (!token || !tripId) return;
-    try {
-      const res = await apiFetch(`/api/trips/${tripId}/expenses`, { token });
-      if (res.ok) {
-        const data = await res.json();
-        setExpenses(data.expenses || []);
+  // Fetch a page of expenses. `reset=true` loads the newest page (no cursor);
+  // otherwise it continues from the current cursor toward older rows.
+  const fetchExpenses = useCallback(
+    async (reset = false) => {
+      if (!token || !tripId) return;
+      const cursor = reset ? null : cursorRef.current;
+      try {
+        const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
+        if (cursor) qs.set('cursor', cursor);
+        const res = await apiFetch(`/api/trips/${tripId}/expenses?${qs.toString()}`, { token });
+        if (res.ok) {
+          const data = await res.json();
+          const fetched: ExpenseWithSplits[] = data.expenses || [];
+          setExpenses((prev) => (reset ? fetched : [...prev, ...fetched]));
+          const nextCursor =
+            data.nextCursor ??
+            (fetched.length === PAGE_SIZE ? fetched[fetched.length - 1]?.id ?? null : null);
+          cursorRef.current = nextCursor;
+          setHasMore(nextCursor !== null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch expenses:', error);
       }
-    } catch (error) {
-      console.error('Failed to fetch expenses:', error);
-    }
-  }, [token, tripId]);
+    },
+    [token, tripId]
+  );
+
+  // Load the next older page of expenses.
+  const loadMore = useCallback(() => {
+    fetchExpenses(false);
+  }, [fetchExpenses]);
 
   const fetchSettlements = useCallback(async () => {
     if (!token || !tripId) return;
@@ -148,7 +175,9 @@ export function useExpenses({
   }, [token, tripId]);
 
   const refresh = useCallback(async () => {
-    await Promise.all([fetchExpenses(), fetchSettlements()]);
+    // Reset to the newest page so balances and the visible list stay in sync
+    // after our own mutations or real-time changes from other members.
+    await Promise.all([fetchExpenses(true), fetchSettlements()]);
   }, [fetchExpenses, fetchSettlements]);
 
   useEffect(() => {
@@ -319,6 +348,8 @@ export function useExpenses({
     suggested,
     payments,
     loading,
+    hasMore,
+    loadMore,
     createExpense,
     updateExpense,
     deleteExpense,
