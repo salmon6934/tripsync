@@ -338,14 +338,6 @@ export function TripMap() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
-      </div>
-    );
-  }
-
   if (error) {
     return <div className="rounded-lg bg-danger-tint p-4 text-sm text-danger">{error}</div>;
   }
@@ -353,6 +345,13 @@ export function TripMap() {
   return (
     <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
       <aside className="space-y-4">
+        {loading ? (
+          <div aria-busy="true" aria-label="Loading map" className="space-y-4">
+            <div className="h-40 animate-pulse rounded-2xl border border-border bg-card" />
+            <div className="h-28 animate-pulse rounded-2xl border border-border bg-card" />
+          </div>
+        ) : (
+        <>
         <DayFilter
           days={filterEntries}
           visibleDays={visibleDays}
@@ -464,9 +463,16 @@ export function TripMap() {
             no location yet, so {missingLocationCount === 1 ? 'it is' : 'they are'} not on the map.
           </p>
         )}
+        </>
+        )}
       </aside>
 
       <div className="relative h-[32rem] overflow-hidden rounded-2xl border border-border bg-card lg:h-[36rem]">
+        {loading ? (
+          <div className="flex h-full w-full items-center justify-center bg-muted text-sm text-muted-foreground">
+            Loading map…
+          </div>
+        ) : (
         <MapView
           pins={visiblePins}
           routes={routes}
@@ -482,8 +488,9 @@ export function TripMap() {
           onAddNearby={setAddingNearby}
           autoFit
         />
+        )}
 
-        {allPins.length === 0 && (
+        {!loading && allPins.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-card/70 p-6 text-center">
             <p className="max-w-xs text-sm text-muted-foreground">
               No activities have coordinates yet. Add a location to an activity and its pin will

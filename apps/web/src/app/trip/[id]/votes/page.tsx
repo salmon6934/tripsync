@@ -82,14 +82,6 @@ export default function TripVotesPage() {
     return poll.createdBy === currentUserId;
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
-      </div>
-    );
-  }
-
   return (
     <div>
       {/* Header */}
@@ -100,7 +92,7 @@ export default function TripVotesPage() {
             Create polls and vote on activities with your group.
           </p>
         </div>
-        {!showCreateForm && (
+        {!loading && !showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition"
@@ -124,8 +116,27 @@ export default function TripVotesPage() {
         </div>
       )}
 
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="mt-8 space-y-4" aria-busy="true" aria-label="Loading polls">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-40 animate-pulse rounded-2xl border border-border bg-card p-5"
+            >
+              <div className="h-4 w-1/3 rounded bg-muted" />
+              <div className="mt-4 space-y-2">
+                <div className="h-8 w-full rounded bg-muted" />
+                <div className="h-8 w-full rounded bg-muted" />
+                <div className="h-8 w-2/3 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Active Polls */}
-      {activePolls.length > 0 && (
+      {!loading && activePolls.length > 0 && (
         <section className="mt-8">
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Active Polls ({activePolls.length})
@@ -150,7 +161,7 @@ export default function TripVotesPage() {
       )}
 
       {/* Resolved Polls */}
-      {resolvedPolls.length > 0 && (
+      {!loading && resolvedPolls.length > 0 && (
         <section className="mt-8">
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Resolved Polls ({resolvedPolls.length})
@@ -175,7 +186,7 @@ export default function TripVotesPage() {
       )}
 
       {/* Empty State */}
-      {polls.length === 0 && !showCreateForm && (
+      {!loading && polls.length === 0 && !showCreateForm && (
         <div className="mt-8 rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
           <svg
             className="mx-auto h-12 w-12 text-muted-foreground"

@@ -298,6 +298,8 @@ export default function TripLayout({ children }: { children: React.ReactNode }) 
                   src={trip.coverImageUrl}
                   alt=""
                   className="h-full w-full object-cover"
+                  fetchPriority="high"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-foreground/10" />
                 <div className="absolute bottom-4 left-4 sm:left-6 lg:left-8">

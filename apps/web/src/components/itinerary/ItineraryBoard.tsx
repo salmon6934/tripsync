@@ -534,8 +534,24 @@ export function ItineraryBoard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-tint border-t-primary" />
+      <div aria-busy="true" aria-label="Loading itinerary">
+        {/* Trip overview placeholder */}
+        <div className="mb-4 h-12 animate-pulse rounded-2xl border border-border bg-card" />
+        {/* Toolbar placeholder */}
+        <div className="mb-4 h-10 w-64 animate-pulse rounded-lg bg-card" />
+        {/* Day columns placeholder */}
+        <div className="flex gap-4 overflow-hidden">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="w-72 flex-shrink-0 space-y-3 rounded-2xl border border-border bg-card p-4"
+            >
+              <div className="h-5 w-1/2 animate-pulse rounded bg-muted" />
+              <div className="h-24 animate-pulse rounded-lg bg-muted" />
+              <div className="h-24 animate-pulse rounded-lg bg-muted" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
