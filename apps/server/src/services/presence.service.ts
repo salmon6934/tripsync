@@ -22,7 +22,8 @@ let redisClient: Redis | null = null;
 
 export function getRedisClient(): Redis {
   if (!redisClient) {
-    redisClient = new Redis(REDIS_URL);
+    const redisOptions = REDIS_URL.startsWith('rediss://') ? { tls: {} } : {};
+    redisClient = new Redis(REDIS_URL, redisOptions);
     redisClient.on('error', (err) => {
       console.error('Presence Redis client error:', err.message);
     });

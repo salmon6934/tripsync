@@ -33,8 +33,9 @@ export function initializeSocketServer(
     transports: ['polling', 'websocket'],
   });
 
-  // Setup Redis adapter for pub/sub across multiple server instances
-  const pubClient = new Redis(redisUrl);
+  // Setup Redis adapter for pub/sub across multiple server instances (supports rediss:// for Upstash)
+  const redisOptions = redisUrl.startsWith('rediss://') ? { tls: {} } : {};
+  const pubClient = new Redis(redisUrl, redisOptions);
   const subClient = pubClient.duplicate();
 
   // Handle Redis connection errors gracefully

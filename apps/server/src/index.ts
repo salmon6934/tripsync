@@ -8,6 +8,7 @@ import votesRouter from './routes/votes.js';
 import notificationsRouter from './routes/notifications.js';
 import geocodeRouter from './routes/geocode.js';
 import nearbyRouter from './routes/nearby.js';
+import { healthRouter } from './routes/health.js';
 import { initializeSocketServer } from './socket/index.js';
 import { setIoInstance } from './socket/io-instance.js';
 import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
@@ -38,13 +39,8 @@ app.use(express.json());
 // General API rate limiter
 app.use('/api', apiRateLimiter);
 
-// Health check route
-app.get('/api/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
-});
+// Health check routes (/api/health and /api/health/ready)
+app.use('/api/health', healthRouter);
 
 // Routes — auth gets stricter rate limiting
 app.use('/api/auth', authRateLimiter, authRouter);

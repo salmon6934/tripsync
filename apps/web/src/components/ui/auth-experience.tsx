@@ -82,12 +82,49 @@ export function AuthExperience() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [warmingUp, setWarmingUp] = useState(false);
 
   // Random default avatar assigned after mount (a value chosen during render
   // would differ between server and client HTML → hydration mismatch).
   useEffect(() => {
     setAvatarId(AVATARS[Math.floor(Math.random() * AVATARS.length)].id);
   }, []);
+
+  // Backend cold-start warm-up probe: check /api/health/ready on mount
+  useEffect(() => {
+    if (status === 'authenticated') return;
+
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+
+    async function checkReadiness() {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+      try {
+        const res = await fetch(`${API_URL}/api/health/ready`, { signal: AbortSignal.timeout(3000) });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ready) {
+            if (!cancelled) setWarmingUp(false);
+            return;
+          }
+        }
+      } catch {
+        /* Server compute or datastore cold start */
+      }
+
+      if (!cancelled) {
+        setWarmingUp(true);
+        timer = setTimeout(checkReadiness, 2500);
+      }
+    }
+
+    checkReadiness();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [status]);
 
   // If already signed in, skip the auth screen entirely.
   useEffect(() => {
@@ -179,6 +216,13 @@ export function AuthExperience() {
         <GradientBanner />
 
         <div className="px-6 py-8 sm:px-8">
+          {warmingUp && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-warning-tint p-3 text-xs text-warning-tint-foreground">
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-warning-tint-foreground border-t-transparent shrink-0" />
+              <span>Backend server is warming up after idle… Please wait a moment.</span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 rounded-lg bg-danger-tint p-3 text-sm text-danger">{error}</div>
           )}
@@ -213,6 +257,7 @@ export function AuthExperience() {
                     />
                     <SubmitButton
                       loading={loading}
+                      disabled={warmingUp}
                       label="Create account"
                       loadingLabel="Creating account..."
                     />
@@ -242,13 +287,13 @@ export function AuthExperience() {
                       <FloatingInput id="name" label="Name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="off" required />
                       <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="off" required />
                       <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" minLength={8} required />
-                      <SubmitButton loading={false} label="Continue" loadingLabel="Continue" />
+                      <SubmitButton loading={false} disabled={warmingUp} label="Continue" loadingLabel="Continue" />
                     </form>
                   ) : (
                     <form onSubmit={handleSignin} className="mt-6 space-y-4">
                       <FloatingInput id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="off" required />
                       <FloatingInput id="password" label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" required />
-                      <SubmitButton loading={loading} label="Sign in" loadingLabel="Signing in..." />
+                      <SubmitButton loading={loading} disabled={warmingUp} label="Sign in" loadingLabel="Signing in..." />
                     </form>
                   )}
                 </>
@@ -336,17 +381,19 @@ const GradientBanner = memo(function GradientBanner() {
 
 function SubmitButton({
   loading,
+  disabled = false,
   label,
   loadingLabel,
 }: {
   loading: boolean;
+  disabled?: boolean;
   label: string;
   loadingLabel: string;
 }) {
   return (
     <button
       type="submit"
-      disabled={loading}
+      disabled={loading || disabled}
       className="mt-2 flex h-12 w-full items-center justify-center rounded-[10px] bg-primary text-base font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
     >
       {loading ? loadingLabel : label}

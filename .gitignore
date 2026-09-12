@@ -63,3 +63,7 @@ stich frontend
 # Leading slash matters: without it this would also match
 # apps/web/public/brand/, excluding the asset the app actually serves.
 /brand/
+
+# Next.js auto-generated agent instructions
+AGENTS.md
+CLAUDE.md
