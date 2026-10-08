@@ -82,6 +82,7 @@ export function AuthExperience() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [guestLoading, setGuestLoading] = useState(false);
   const [warmingUp, setWarmingUp] = useState(false);
 
   // Random default avatar assigned after mount (a value chosen during render
@@ -311,11 +312,27 @@ export function AuthExperience() {
                 <span className="h-px flex-1 bg-border" />
               </div>
 
-              <SocialButton
-                icon={<GoogleIcon />}
-                label="Continue with Google"
-                onClick={() => signIn('google', { callbackUrl })}
-              />
+              <div className="flex flex-col gap-2.5">
+                <SocialButton
+                  icon={<GoogleIcon />}
+                  label="Continue with Google"
+                  onClick={() => signIn('google', { callbackUrl })}
+                />
+                <SocialButton
+                  icon={<GuestIcon />}
+                  label={guestLoading ? 'Starting guest session...' : 'Continue as Guest'}
+                  onClick={async () => {
+                    setGuestLoading(true);
+                    setError('');
+                    try {
+                      await signIn('guest', { callbackUrl });
+                    } catch {
+                      setError('Failed to enter as guest. Please try again.');
+                      setGuestLoading(false);
+                    }
+                  }}
+                />
+              </div>
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
@@ -433,6 +450,25 @@ function GoogleIcon() {
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
         fill="#EB4335"
       />
+    </svg>
+  );
+}
+
+function GuestIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   );
 }

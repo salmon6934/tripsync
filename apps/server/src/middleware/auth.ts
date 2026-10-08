@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'dev-secret-change-in-producti
 export interface AuthPayload {
   userId: string;
   email: string;
+  isGuest?: boolean;
 }
 
 // Extend Express Request to include auth info

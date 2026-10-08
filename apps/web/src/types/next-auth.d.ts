@@ -9,6 +9,7 @@ declare module 'next-auth' {
       image?: string | null;
       /** Id of the user's chosen built-in avatar (see @tripsync/shared). */
       avatarId?: number | null;
+      isGuest?: boolean;
     };
     accessToken?: string;
   }
@@ -17,6 +18,7 @@ declare module 'next-auth' {
     id: string;
     accessToken?: string;
     avatarId?: number | null;
+    isGuest?: boolean;
   }
 }
 
@@ -25,5 +27,6 @@ declare module 'next-auth/jwt' {
     userId?: string;
     accessToken?: string;
     avatarId?: number | null;
+    isGuest?: boolean;
   }
 }

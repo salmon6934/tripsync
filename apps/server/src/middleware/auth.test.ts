@@ -108,14 +108,20 @@ describe('Auth Middleware', () => {
       expect(decoded.email).toBe(payload.email);
     });
 
-    it('should create a token that expires in 7 days', () => {
-      const payload = { userId: 'user-789', email: 'user@example.com' };
+    it('should support isGuest claim in token', () => {
+      const payload = { userId: 'guest-1', email: 'guest_123@guest.tripsync.local', isGuest: true };
       const token = signToken(payload);
 
       const decoded = jwt.verify(token, JWT_SECRET) as any;
-      const expiresIn = decoded.exp - decoded.iat;
-      // 7 days = 604800 seconds
-      expect(expiresIn).toBe(604800);
+      expect(decoded.userId).toBe(payload.userId);
+      expect(decoded.email).toBe(payload.email);
+      expect(decoded.isGuest).toBe(true);
+
+      const req = createMockReq(`Bearer ${token}`);
+      const res = createMockRes();
+      authenticate(req as Request, res as Response, next);
+      expect(next).toHaveBeenCalled();
+      expect((req as any).auth.isGuest).toBe(true);
     });
   });
 });

@@ -85,7 +85,8 @@ export function initializeSocketServer(
       socket.data.tripId = tripId;
 
       // Fetch user name and avatar from DB for presence
-      let userName = socket.data.email || 'Unknown';
+      const isSyntheticGuest = typeof socket.data.email === 'string' && socket.data.email.startsWith('guest_');
+      let userName = isSyntheticGuest ? 'Guest' : (socket.data.email || 'Unknown');
       let avatarId: number | null = null;
       try {
         const [user] = await db

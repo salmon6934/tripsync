@@ -26,8 +26,17 @@ export function UserMenu() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-card py-2 shadow-lg">
           <div className="border-b border-border px-4 py-2">
-            <p className="text-sm font-medium text-foreground">{session.user.name}</p>
-            <p className="text-xs text-muted-foreground">{session.user.email}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium text-foreground">{session.user.name}</p>
+              {session.user.isGuest && (
+                <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  Guest
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {session.user.isGuest ? 'Guest session' : session.user.email}
+            </p>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: '/' })}

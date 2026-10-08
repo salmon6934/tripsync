@@ -22,6 +22,7 @@ export const users = pgTable('users', {
   // resolves it to an image client-side via getAvatarSrc(id).
   avatarId: integer('avatar_id'),
   passwordHash: text('password_hash'), // null for OAuth-only users
+  isGuest: boolean('is_guest').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -39,7 +40,7 @@ export const trips = pgTable('trips', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   createdBy: uuid('created_by')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   inviteCode: text('invite_code').notNull().unique(),
   coverImageUrl: text('cover_image_url'),
@@ -55,7 +56,7 @@ export const tripMembers = pgTable('trip_members', {
     .references(() => trips.id, { onDelete: 'cascade' })
     .notNull(),
   userId: uuid('user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   role: text('role', { enum: ['owner', 'editor', 'viewer'] }).notNull(),
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
@@ -96,7 +97,7 @@ export const activityBlocks = pgTable('activity_blocks', {
   currency: text('currency').default('INR'),
   position: real('position').notNull(),
   createdBy: uuid('created_by')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   lastEditedBy: uuid('last_edited_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -120,7 +121,7 @@ export const votes = pgTable('votes', {
     .notNull(),
   question: text('question').notNull(),
   createdBy: uuid('created_by')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   isResolved: boolean('is_resolved').default(false).notNull(),
   winningOptionId: uuid('winning_option_id'),
@@ -151,7 +152,7 @@ export const voteResponses = pgTable('vote_responses', {
     .references(() => voteOptions.id)
     .notNull(),
   userId: uuid('user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -173,7 +174,7 @@ export const expenses = pgTable('expenses', {
   // Primary payer (single-payer convenience). Per-payer paid shares are
   // tracked on expense_splits.paid_minor for multi-payer support.
   paidBy: uuid('paid_by')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   splitType: text('split_type', {
     enum: ['equal', 'custom', 'percentage'],
@@ -194,7 +195,7 @@ export const expenseSplits = pgTable('expense_splits', {
     .references(() => expenses.id, { onDelete: 'cascade' })
     .notNull(),
   userId: uuid('user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   // Each participant carries both an owed share and a paid share, in integer
   // minor units. sum(owedMinor) == sum(paidMinor) == expense.amountMinor.
@@ -213,10 +214,10 @@ export const settlements = pgTable('settlements', {
     .references(() => trips.id, { onDelete: 'cascade' })
     .notNull(),
   fromUserId: uuid('from_user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   toUserId: uuid('to_user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   amountMinor: integer('amount_minor').notNull(),
   note: text('note'),
@@ -250,7 +251,7 @@ export const activityLog = pgTable('activity_log', {
     .references(() => trips.id, { onDelete: 'cascade' })
     .notNull(),
   userId: uuid('user_id')
-    .references(() => users.id)
+    .references(() => users.id, { onDelete: 'cascade' })
     .notNull(),
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(),

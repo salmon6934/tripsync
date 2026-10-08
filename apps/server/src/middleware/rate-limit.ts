@@ -16,6 +16,21 @@ export const authRateLimiter = rateLimit({
 });
 
 /**
+ * Permissive rate limiter for guest session creation: 60 requests per 15 minutes per IP.
+ * Supports frictionless exploration without risking brute-force vectors on credential routes.
+ */
+export const guestRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    code: 'RATE_LIMIT_EXCEEDED',
+    message: 'Too many guest accounts created from this IP, please try again later',
+  },
+});
+
+/**
  * General API rate limiter: 120 requests per minute per IP.
  */
 export const apiRateLimiter = rateLimit({

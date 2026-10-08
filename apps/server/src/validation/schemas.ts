@@ -27,6 +27,18 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const upgradeGuestSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().min(1, 'Name is required').max(100).optional(),
+  avatarId: z
+    .number()
+    .int()
+    .min(MIN_AVATAR_ID)
+    .max(MAX_AVATAR_ID)
+    .optional(),
+});
+
 // Trip schemas
 // Latitude/longitude of the resolved destination. Optional and nullable so a
 // destination typed by hand (no geocoding pick) still validates.

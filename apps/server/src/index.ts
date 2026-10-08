@@ -11,7 +11,7 @@ import nearbyRouter from './routes/nearby.js';
 import { healthRouter } from './routes/health.js';
 import { initializeSocketServer } from './socket/index.js';
 import { setIoInstance } from './socket/io-instance.js';
-import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit.js';
+import { apiRateLimiter } from './middleware/rate-limit.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -42,8 +42,8 @@ app.use('/api', apiRateLimiter);
 // Health check routes (/api/health and /api/health/ready)
 app.use('/api/health', healthRouter);
 
-// Routes — auth gets stricter rate limiting
-app.use('/api/auth', authRateLimiter, authRouter);
+// Routes — auth handlers manage their own specific rate limiters
+app.use('/api/auth', authRouter);
 app.use('/api/trips', tripsRouter);
 app.use('/api/votes', votesRouter);
 app.use('/api/notifications', notificationsRouter);

@@ -8,6 +8,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
+      id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -40,6 +41,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email: data.user.email,
             name: data.user.name,
             avatarId: data.user.avatarId,
+            isGuest: data.user.isGuest ?? false,
+            accessToken: data.token,
+          };
+        } catch {
+          return null;
+        }
+      },
+    }),
+    Credentials({
+      id: 'guest',
+      name: 'guest',
+      credentials: {},
+      async authorize() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/auth/guest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (!response.ok) {
+            return null;
+          }
+
+          const data = await response.json();
+
+          return {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            avatarId: data.user.avatarId,
+            isGuest: true,
             accessToken: data.token,
           };
         } catch {
@@ -66,19 +98,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      // On first sign-in, persist the backend token + avatar into the JWT
+      // On first sign-in, persist the backend token + avatar + isGuest into the JWT
       if (user) {
         token.userId = user.id;
         token.accessToken = (user as any).accessToken;
         token.avatarId = (user as any).avatarId ?? null;
+        token.isGuest = (user as any).isGuest ?? false;
       }
       return token;
     },
     async session({ session, token }) {
-      // Expose userId, accessToken and avatar to the client session
+      // Expose userId, accessToken, avatar, and isGuest to the client session
       if (session.user) {
         session.user.id = token.userId as string;
         session.user.avatarId = (token.avatarId as number | null | undefined) ?? null;
+        session.user.isGuest = (token.isGuest as boolean | undefined) ?? false;
         (session as any).accessToken = token.accessToken;
       }
       return session;
