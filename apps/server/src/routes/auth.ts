@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { signupSchema, loginSchema, upgradeGuestSchema, validate } from '../validation/schemas.js';
+import { signupSchema, loginSchema, upgradeGuestSchema, oauthSchema, validate } from '../validation/schemas.js';
 import { authenticate, signToken } from '../middleware/auth.js';
 import { authRateLimiter, guestRateLimiter } from '../middleware/rate-limit.js';
 
@@ -204,6 +204,92 @@ router.post(
       res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: 'Failed to create guest session',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/auth/oauth
+ * Syncs an OAuth authenticated user to the backend database
+ * and issues a backend JWT accessToken.
+ */
+router.post(
+  '/oauth',
+  authRateLimiter as RequestHandler,
+  validate(oauthSchema) as RequestHandler,
+  async (req: Request, res: Response) => {
+    try {
+      const { email, name, avatarId: requestedAvatarId } = req.body;
+      const normalizedEmail = email.toLowerCase();
+
+      // Check if user already exists
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
+
+      if (existingUser) {
+        // Issue token for existing user
+        const token = signToken({
+          userId: existingUser.id,
+          email: existingUser.email,
+          isGuest: existingUser.isGuest ?? false,
+        });
+
+        res.status(200).json({
+          user: {
+            id: existingUser.id,
+            email: existingUser.email,
+            name: existingUser.name,
+            avatarId: existingUser.avatarId,
+            isGuest: existingUser.isGuest ?? false,
+            createdAt: existingUser.createdAt,
+          },
+          token,
+        });
+        return;
+      }
+
+      // Create new OAuth user
+      const avatarId = isValidAvatarId(requestedAvatarId)
+        ? requestedAvatarId
+        : pickAvatarIdForSeed(normalizedEmail);
+
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: normalizedEmail,
+          name: name || normalizedEmail.split('@')[0],
+          avatarId,
+          passwordHash: null,
+          isGuest: false,
+        })
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          avatarId: users.avatarId,
+          isGuest: users.isGuest,
+          createdAt: users.createdAt,
+        });
+
+      const token = signToken({
+        userId: newUser.id,
+        email: newUser.email,
+        isGuest: false,
+      });
+
+      res.status(201).json({
+        user: newUser,
+        token,
+      });
+    } catch (error) {
+      console.error('OAuth sync error:', error);
+      res.status(500).json({
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to process OAuth authentication',
       });
     }
   }

@@ -39,6 +39,17 @@ export const upgradeGuestSchema = z.object({
     .optional(),
 });
 
+export const oauthSchema = z.object({
+  email: emailSchema,
+  name: z.string().min(1).max(100).optional(),
+  avatarId: z
+    .number()
+    .int()
+    .min(MIN_AVATAR_ID)
+    .max(MAX_AVATAR_ID)
+    .optional(),
+});
+
 // Trip schemas
 // Latitude/longitude of the resolved destination. Optional and nullable so a
 // destination typed by hand (no geocoding pick) still validates.

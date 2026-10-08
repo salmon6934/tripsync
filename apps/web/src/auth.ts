@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -79,10 +78,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       },
     }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
@@ -97,8 +92,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/',
   },
   callbacks: {
-    async jwt({ token, user }) {
-      // On first sign-in, persist the backend token + avatar + isGuest into the JWT
+    async jwt({ token, user, account }) {
+      // If signing in via OAuth (e.g., GitHub), sync with backend to get DB user and accessToken
+      if (account && account.provider !== 'credentials' && account.provider !== 'guest' && user?.email) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/auth/oauth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name || undefined,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            token.userId = data.user.id;
+            token.accessToken = data.token;
+            token.avatarId = data.user.avatarId ?? null;
+            token.isGuest = data.user.isGuest ?? false;
+            return token;
+          }
+        } catch (error) {
+          console.error('Failed to sync OAuth user with backend:', error);
+        }
+      }
+
+      // On credentials or guest sign-in, persist the backend token + avatar + isGuest into the JWT
       if (user) {
         token.userId = user.id;
         token.accessToken = (user as any).accessToken;
